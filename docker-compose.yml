@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  tirde-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tirde-backend
+    restart: always
+    ports:
+      - "${PORT_BACKEND:-5040}:5001"
+    volumes:
+      - tirde-data:/app/data
+    environment:
+      - PORT=5001
+      - DATABASE_URL=file:/app/data/dev.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - tirde-network
+
+  tirde-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5040/api}
+    container_name: tirde-frontend
+    restart: always
+    ports:
+      - "${PORT_FRONTEND:-3040}:3000"
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5040/api}
+    networks:
+      - tirde-network
+    depends_on:
+      - tirde-backend
+
+volumes:
+  tirde-data:
+    name: tirde-data
+
+networks:
+  tirde-network:
+    name: tirde-network

@@ -1,0 +1,515 @@
+```yaml id="tirde-design-language-v1"
+design_system:
+  name: TIRDE Hospitality Intelligence Design Language
+  version: 1.0
+  purpose: >
+    A warm, intelligent, hospitality-first design language
+    for the Triangle Indian Restaurant Discoverability Engine.
+
+  philosophy:
+    statement: >
+      The interface should feel like a trusted restaurant growth companion,
+      not a technical SEO platform or enterprise dashboard.
+
+    emotional_goals:
+      - warm
+      - optimistic
+      - calm
+      - trustworthy
+      - intelligent
+      - welcoming
+      - premium
+      - culturally_familiar
+
+    experience_principles:
+      - simplicity_over_complexity
+      - recommendation_over_configuration
+      - conversational_over_technical
+      - guidance_over_analytics
+      - hospitality_over_enterprise
+      - semantic_clarity_over_dashboard_density
+
+    forbidden_feelings:
+      - gloomy
+      - cyberpunk
+      - developer_tooling
+      - enterprise_overload
+      - analytics_fatigue
+      - intimidating_complexity
+
+brand_identity:
+
+  positioning:
+    statement: >
+      AI-powered discoverability optimization
+      for Indian restaurants.
+
+  personality:
+    - intelligent
+    - friendly
+    - calm
+    - culturally_warm
+    - trustworthy
+    - premium
+    - approachable
+
+  visual_metaphor:
+    description: >
+      The platform should feel like
+      a beautifully organized premium restaurant menu
+      mixed with a modern AI concierge.
+
+core_ui_philosophy:
+
+  principle_1:
+    name: Guided Intelligence
+    description: >
+      The system recommends actions instead of
+      forcing users to configure complex settings.
+
+  principle_2:
+    name: Warm Simplicity
+    description: >
+      Use light surfaces, breathing room,
+      soft colors, and clear hierarchy.
+
+  principle_3:
+    name: Semantic Visibility
+    description: >
+      Important discoverability information
+      should feel obvious and visual.
+
+  principle_4:
+    name: Progressive Disclosure
+    description: >
+      Advanced details should appear only when needed.
+
+  principle_5:
+    name: Human Language
+    description: >
+      Never expose technical terminology to restaurant owners.
+
+color_system:
+
+  philosophy:
+    description: >
+      Use warm light colors to create emotional comfort.
+      Avoid harsh dark themes and overly technical aesthetics.
+
+  primary_palette:
+
+    warm_white:
+      hex: "#FAF7F2"
+      usage:
+        - primary_background
+        - dashboard_canvas
+
+    cream:
+      hex: "#F4EEE3"
+      usage:
+        - cards
+        - sections
+        - soft_panels
+
+    deep_green:
+      hex: "#174B3A"
+      usage:
+        - primary_actions
+        - headers
+        - trust_signals
+
+    saffron_gold:
+      hex: "#D9A441"
+      usage:
+        - highlights
+        - discoverability_accents
+        - premium_elements
+
+    earthy_brown:
+      hex: "#5C3A2E"
+      usage:
+        - typography_accents
+        - section_titles
+
+    muted_leaf:
+      hex: "#7BA37A"
+      usage:
+        - positive_feedback
+        - optimization_states
+
+    soft_red:
+      hex: "#B85C4B"
+      usage:
+        - alerts
+        - warnings
+        - low_scores
+
+  neutral_palette:
+
+    ink:
+      hex: "#1F1F1F"
+
+    charcoal:
+      hex: "#3B3B3B"
+
+    slate:
+      hex: "#6E6E6E"
+
+    mist:
+      hex: "#EAE6DE"
+
+    border:
+      hex: "#DDD6C8"
+
+  forbidden_colors:
+    - neon_blue
+    - cyber_green
+    - pure_black_backgrounds
+    - oversaturated_gradients
+    - hacker_style_glows
+
+typography:
+
+  philosophy:
+    description: >
+      Typography should feel editorial,
+      calm, and premium while remaining extremely readable.
+
+  font_family:
+    primary:
+      - DM Sans
+      - Inter
+      - sans-serif
+
+  type_scale:
+
+    hero:
+      size: 56px
+      weight: 700
+      line_height: 1.1
+      letter_spacing: -1.5px
+
+    section_title:
+      size: 36px
+      weight: 600
+      line_height: 1.2
+
+    card_title:
+      size: 24px
+      weight: 600
+      line_height: 1.3
+
+    body_large:
+      size: 18px
+      weight: 400
+      line_height: 1.6
+
+    body:
+      size: 16px
+      weight: 400
+      line_height: 1.6
+
+    body_small:
+      size: 14px
+      weight: 400
+      line_height: 1.5
+
+    label:
+      size: 13px
+      weight: 500
+      line_height: 1.4
+
+  typography_rules:
+    - use_large_headlines
+    - prioritize_readability
+    - avoid_dense_text_blocks
+    - use_generous_line_spacing
+    - avoid_excessive_bold_usage
+
+layout_system:
+
+  philosophy:
+    description: >
+      The interface should breathe.
+      White space is a core part of the emotional experience.
+
+  spacing_scale:
+    xs: 4px
+    sm: 8px
+    md: 16px
+    lg: 24px
+    xl: 32px
+    xxl: 48px
+    hero: 72px
+
+  layout_rules:
+    - large_vertical_spacing
+    - generous_card_padding
+    - avoid_cramped_tables
+    - prioritize_visual_breathing_room
+    - mobile_first_design
+
+  container_widths:
+    dashboard_max: 1280px
+    content_max: 720px
+    card_max: 420px
+
+shape_language:
+
+  philosophy:
+    description: >
+      Rounded corners create warmth and friendliness.
+
+  border_radius:
+    sm: 8px
+    md: 12px
+    lg: 18px
+    xl: 24px
+    pill: 9999px
+
+  usage_rules:
+    - all_primary_buttons_are_pill_shaped
+    - avoid_sharp_corners
+    - cards_must_feel_soft
+    - inputs_should_feel_inviting
+
+elevation_system:
+
+  philosophy:
+    description: >
+      The UI should feel layered softly,
+      not aggressively elevated.
+
+  shadows:
+
+    subtle:
+      value: "0px 2px 8px rgba(0,0,0,0.04)"
+
+    medium:
+      value: "0px 6px 18px rgba(0,0,0,0.06)"
+
+    soft_glow:
+      value: "0px 0px 24px rgba(217,164,65,0.08)"
+
+  rules:
+    - prefer_soft_shadows
+    - avoid_hard_contrasts
+    - avoid_heavy_glassmorphism
+    - avoid_neon_glows
+
+component_language:
+
+  buttons:
+
+    primary_button:
+      background: deep_green
+      text_color: warm_white
+      border_radius: pill
+      padding: "12px 24px"
+
+    secondary_button:
+      background: cream
+      text_color: deep_green
+      border: "1px solid border"
+
+    recommendation_button:
+      background: saffron_gold
+      text_color: warm_white
+
+  cards:
+
+    standard_card:
+      background: cream
+      border_radius: lg
+      padding: xl
+      shadow: subtle
+
+    discoverability_card:
+      background: warm_white
+      border: "1px solid border"
+      border_radius: xl
+
+    recommendation_card:
+      background: "#FFF8EA"
+      border_left: "4px solid saffron_gold"
+
+  score_components:
+
+    discoverability_score:
+      visual_style:
+        - large_numbers
+        - circular_progress
+        - warm_gradient
+        - clear_labels
+
+    improvement_opportunities:
+      visual_style:
+        - checklist_format
+        - actionable_recommendations
+        - low_cognitive_load
+
+dashboard_structure:
+
+  homepage_sections:
+    - welcome_banner
+    - discoverability_score
+    - top_recommendations
+    - search_visibility_preview
+    - dish_discoverability
+    - local_search_trends
+
+  forbidden_sections:
+    - technical_metrics_overload
+    - raw_schema_data
+    - embedding_visualizations
+    - developer_debug_panels
+
+ux_language:
+
+  philosophy:
+    description: >
+      Use restaurant language instead of technical language.
+
+  terminology_mapping:
+
+    semantic_enrichment:
+      replace_with: "Dish Understanding"
+
+    schema_generation:
+      replace_with: "Google Optimization"
+
+    conversational_retrieval:
+      replace_with: "AI Search Visibility"
+
+    entity_normalization:
+      replace_with: "Dish Recognition"
+
+    metadata_quality:
+      replace_with: "Restaurant Clarity"
+
+    vector_search:
+      replace_with: "Smart Search"
+
+    ai_readiness:
+      replace_with: "AI Discoverability"
+
+interaction_model:
+
+  philosophy:
+    description: >
+      The interface should feel assistive and proactive.
+
+  interaction_rules:
+    - recommend_actions
+    - minimize_manual_configuration
+    - show_immediate_value
+    - prioritize_one_click_improvements
+    - reduce_decision_fatigue
+
+  onboarding_flow:
+    step_1:
+      title: "Find Your Restaurant"
+
+    step_2:
+      title: "Analyze Discoverability"
+
+    step_3:
+      title: "Apply Smart Improvements"
+
+    step_4:
+      title: "Track Visibility Growth"
+
+discoverability_visualization:
+
+  philosophy:
+    description: >
+      Discoverability should feel visual,
+      understandable, and motivating.
+
+  visualization_types:
+    - discoverability_score
+    - search_preview
+    - ai_answer_preview
+    - maps_preview
+    - dish_visibility_ranking
+    - local_search_trends
+
+  avoid:
+    - dense_charts
+    - enterprise_graphs
+    - overwhelming_data_tables
+
+mobile_experience:
+
+  philosophy:
+    description: >
+      Restaurant owners will heavily use mobile devices.
+      Mobile usability is mandatory.
+
+  mobile_rules:
+    - thumb_friendly_buttons
+    - large_touch_targets
+    - vertical_scrolling_priority
+    - avoid_complex_sidebars
+    - prioritize_single_column_layouts
+
+accessibility:
+
+  goals:
+    - high_readability
+    - strong_contrast
+    - large_click_targets
+    - simple_navigation
+    - low_cognitive_load
+
+engineering_rules:
+
+  frontend_rules:
+    - every_screen_must_feel_simple
+    - avoid_feature_overcrowding
+    - avoid_technical_exposure
+    - optimize_for_emotional_clarity
+    - preserve_hospitality_feeling
+
+  prohibited_patterns:
+    - cyberpunk_design
+    - developer_console_feeling
+    - excessive_dark_mode_usage
+    - enterprise_dashboard_clutter
+    - analytics_first_ui
+
+future_design_evolution:
+
+  phase_2:
+    additions:
+      - personalized_recommendations
+      - discoverability_heatmaps
+      - conversational_search_previews
+
+  phase_3:
+    additions:
+      - locality_trend_visualizations
+      - ai_visibility_predictions
+      - semantic_food_graph_visualizations
+
+success_criteria:
+
+  emotional:
+    - users_feel_confident
+    - users_feel_supported
+    - users_feel_smart
+    - users_feel_the_system_is_easy
+
+  operational:
+    - onboarding_under_10_minutes
+    - low_support_requests
+    - high_repeat_usage
+    - strong_mobile_engagement
+
+  strategic:
+    - platform_feels_unique
+    - platform_feels_premium
+    - platform_feels_hospitality_focused
+    - platform_feels_ai_powered_without_being_intimidating
+```
+

@@ -1,0 +1,480 @@
+```yaml id="tirde-uiux-design-language-v2"
+uiux_design_system:
+  name: TIRDE Hospitality Discoverability UI System
+  version: 2.0
+  category: Hospitality AI Discoverability Platform
+
+core_design_philosophy:
+
+  mission:
+    statement: >
+      Create a warm, intelligent, hospitality-first interface
+      that makes restaurant discoverability optimization
+      feel simple, actionable, and trustworthy.
+
+  emotional_objectives:
+    - warm
+    - optimistic
+    - intelligent
+    - premium
+    - approachable
+    - culturally_familiar
+    - trustworthy
+    - non_intimidating
+
+  forbidden_feelings:
+    - enterprise_heaviness
+    - cyberpunk_ai
+    - developer_tooling
+    - dashboard_fatigue
+    - gloomy_darkness
+    - technical_overwhelm
+    - analytics_clutter
+
+  experience_principles:
+    - recommendation_over_configuration
+    - guidance_over_complexity
+    - evidence_over_vanity
+    - hospitality_over_enterprise
+    - semantic_clarity_over_data_density
+    - progressive_disclosure_over_feature_overload
+
+brand_identity:
+
+  positioning:
+    statement: >
+      AI-powered discoverability optimization
+      for Indian restaurants.
+
+  personality:
+    - calm
+    - smart
+    - culturally_warm
+    - modern
+    - supportive
+    - hospitality_focused
+
+  visual_identity:
+    metaphor: >
+      Premium restaurant hospitality blended
+      with intelligent AI assistance.
+
+color_system:
+
+  philosophy:
+    description: >
+      The palette should feel modern, premium,
+      warm, optimistic, and trustworthy.
+
+  primary_palette:
+
+    background:
+      hex: "#F8F7F4"
+      usage:
+        - application_background
+        - dashboard_background
+
+    card_surface:
+      hex: "#FFFFFF"
+      usage:
+        - cards
+        - floating_sections
+        - content_surfaces
+
+    deep_green:
+      hex: "#15543F"
+      usage:
+        - primary_actions
+        - success_states
+        - trust_elements
+
+    saffron_gold:
+      hex: "#D4A44B"
+      usage:
+        - discoverability_highlights
+        - premium_accents
+        - recommendation_highlights
+
+    terracotta:
+      hex: "#C96B4B"
+      usage:
+        - warnings
+        - low_scores
+        - semantic_attention
+
+    warm_olive:
+      hex: "#758B5A"
+      usage:
+        - positive_trends
+        - hospitality_accents
+
+    soft_cream:
+      hex: "#F5EFE5"
+      usage:
+        - secondary_backgrounds
+        - grouped_sections
+
+  typography_palette:
+
+    primary_text:
+      hex: "#1F1F1F"
+
+    secondary_text:
+      hex: "#5B5B5B"
+
+    muted_text:
+      hex: "#808080"
+
+    border:
+      hex: "#E7E1D8"
+
+  prohibited_palette_patterns:
+    - neon_gradients
+    - pure_black_backgrounds
+    - oversaturated_blue
+    - hacker_green
+    - glowing_ai_effects
+
+typography_system:
+
+  philosophy:
+    description: >
+      Typography should feel editorial,
+      premium, calm, and highly readable.
+
+  font_stack:
+    primary:
+      - DM Sans
+      - Inter
+      - sans-serif
+
+  typography_scale:
+
+    hero_heading:
+      size: 54px
+      weight: 700
+      line_height: 1.1
+      letter_spacing: -1.4px
+
+    page_heading:
+      size: 38px
+      weight: 650
+      line_height: 1.2
+
+    section_heading:
+      size: 28px
+      weight: 600
+      line_height: 1.3
+
+    card_heading:
+      size: 22px
+      weight: 600
+
+    body_large:
+      size: 18px
+      weight: 400
+      line_height: 1.7
+
+    body:
+      size: 16px
+      weight: 400
+      line_height: 1.6
+
+    body_small:
+      size: 14px
+      weight: 400
+      line_height: 1.5
+
+    labels:
+      size: 13px
+      weight: 500
+
+  typography_rules:
+    - avoid_dense_text
+    - use_generous_spacing
+    - prioritize_scannability
+    - avoid_excessive_caps
+    - large_titles_create_confidence
+
+layout_system:
+
+  philosophy:
+    description: >
+      Layouts should breathe and reduce cognitive fatigue.
+
+  spacing_scale:
+    xs: 4px
+    sm: 8px
+    md: 16px
+    lg: 24px
+    xl: 32px
+    xxl: 48px
+    hero: 72px
+
+  layout_rules:
+    - large_card_padding
+    - avoid_dense_tables
+    - prioritize_whitespace
+    - avoid_visual_noise
+    - mobile_first
+    - simple_navigation_hierarchy
+
+  container_rules:
+    dashboard_max_width: 1360px
+    content_max_width: 760px
+    section_gap: 32px
+
+shape_language:
+
+  philosophy:
+    description: >
+      Rounded geometry creates hospitality warmth.
+
+  radius_scale:
+    sm: 10px
+    md: 14px
+    lg: 20px
+    xl: 28px
+    pill: 9999px
+
+  usage_rules:
+    - buttons_are_softly_rounded
+    - cards_have_large_radius
+    - avoid_sharp_edges
+    - floating_elements_feel_inviting
+
+elevation_system:
+
+  philosophy:
+    description: >
+      Elevation should feel subtle and premium.
+
+  shadows:
+
+    subtle:
+      value: "0px 2px 10px rgba(0,0,0,0.04)"
+
+    medium:
+      value: "0px 8px 24px rgba(0,0,0,0.06)"
+
+    focus:
+      value: "0px 0px 0px 4px rgba(21,84,63,0.08)"
+
+  prohibited_styles:
+    - glassmorphism_overuse
+    - heavy_neumorphism
+    - neon_glows
+
+navigation_system:
+
+  philosophy:
+    description: >
+      Navigation should feel calm and obvious.
+
+  sidebar:
+    width: 260px
+    background: soft_cream
+
+    behavior_rules:
+      - minimal_navigation_depth
+      - icon_plus_label
+      - avoid_nested_complexity
+
+  topbar:
+    height: 72px
+
+    includes:
+      - restaurant_selector
+      - discoverability_status
+      - profile_controls
+      - quick_actions
+
+dashboard_architecture:
+
+  homepage_structure:
+    - discoverability_overview
+    - visibility_improvements
+    - top_recommendations
+    - search_preview_panel
+    - dish_visibility_section
+    - conversational_readiness
+    - local_intent_trends
+
+  prohibited_widgets:
+    - technical_debug_panels
+    - raw_schema_views
+    - overwhelming_graphs
+    - meaningless_kpi_tiles
+
+component_system:
+
+  discoverability_card:
+    purpose: >
+      Show explainable discoverability metrics.
+
+    visual_style:
+      background: card_surface
+      border_radius: xl
+      padding: xl
+      shadow: subtle
+
+    contents:
+      - score
+      - explanation
+      - confidence_indicator
+      - improvement_hint
+
+  recommendation_panel:
+    purpose: >
+      Show actionable discoverability improvements.
+
+    structure:
+      - recommendation_title
+      - evidence
+      - impact_estimate
+      - one_click_action
+
+  ai_preview_card:
+    purpose: >
+      Simulate AI search and conversational visibility.
+
+    sections:
+      - google_preview
+      - ai_answer_preview
+      - voice_search_preview
+      - maps_preview
+
+  dish_visibility_card:
+    purpose: >
+      Show discoverable dishes and weak dish entities.
+
+interaction_model:
+
+  philosophy:
+    description: >
+      The platform should behave like an intelligent assistant.
+
+  interaction_rules:
+    - one_click_improvements
+    - proactive_recommendations
+    - low_cognitive_load
+    - minimal_manual_inputs
+    - evidence_based_feedback
+
+  onboarding_experience:
+    step_1:
+      title: Find Your Restaurant
+
+    step_2:
+      title: Analyze Discoverability
+
+    step_3:
+      title: Review Improvement Opportunities
+
+    step_4:
+      title: Apply Smart Optimizations
+
+ux_copy_system:
+
+  philosophy:
+    description: >
+      Use restaurant-friendly language instead of technical terminology.
+
+  terminology_mapping:
+
+    semantic_enrichment:
+      replace_with: Dish Understanding
+
+    schema_generation:
+      replace_with: Google Optimization
+
+    conversational_retrieval:
+      replace_with: AI Search Visibility
+
+    metadata_quality:
+      replace_with: Restaurant Clarity
+
+    vector_search:
+      replace_with: Smart Search
+
+    semantic_density:
+      replace_with: Search Richness
+
+mobile_experience:
+
+  philosophy:
+    description: >
+      Restaurant owners will heavily use mobile devices.
+
+  mobile_rules:
+    - thumb_friendly_navigation
+    - stacked_cards
+    - single_column_priority
+    - large_touch_targets
+    - simplified_navigation
+
+discoverability_visualization:
+
+  philosophy:
+    description: >
+      Discoverability should feel explainable,
+      actionable, and trustworthy.
+
+  preferred_visuals:
+    - score_breakdowns
+    - search_previews
+    - evidence_panels
+    - discoverability_heatmaps
+    - dish_visibility_rankings
+
+  avoid:
+    - fake_growth_charts
+    - decorative_graphs
+    - meaningless_percentages
+    - vanity_metrics
+
+accessibility:
+
+  goals:
+    - high_readability
+    - low_cognitive_load
+    - strong_color_contrast
+    - large_interactive_targets
+    - intuitive_navigation
+
+frontend_engineering_rules:
+
+  mandatory:
+    - every_screen_must_feel_simple
+    - every_score_must_be_explainable
+    - every_recommendation_must_be_actionable
+    - avoid_technical_exposure
+    - maintain_hospitality_emotion
+
+  prohibited:
+    - dashboard_overcrowding
+    - excessive_charts
+    - raw_technical_metrics
+    - feature_bloat
+    - intimidating_ux
+
+success_criteria:
+
+  emotional:
+    - users_feel_supported
+    - users_feel_confident
+    - users_feel_the_system_is_easy
+    - users_feel_the_system_is_intelligent
+
+  operational:
+    - onboarding_under_10_minutes
+    - low_support_requests
+    - high_mobile_usage
+    - high_recommendation_adoption
+
+  strategic:
+    - ui_feels_premium
+    - ui_feels_hospitality_first
+    - ui_feels_ai_powered_without_intimidation
+```
+

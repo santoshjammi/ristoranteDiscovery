@@ -1,0 +1,1243 @@
+```yaml id="tirde-discoverability-scoring-engine-v2"
+discoverability_scoring_engine:
+  name: TIRDE Explainable Discoverability Intelligence Engine
+  version: 2.0
+  category: Semantic Discoverability Scoring Framework
+
+core_philosophy:
+
+  mission:
+    statement: >
+      Build an explainable, evidence-backed,
+      retrieval-oriented discoverability scoring engine
+      for Indian restaurant optimization.
+
+  principles:
+    - scores_must_be_explainable
+    - scores_must_be_actionable
+    - scores_must_be_evidence_based
+    - scores_must_improve_retrieval_probability
+    - scores_must_not_reward_keyword_spam
+
+  forbidden_patterns:
+    - arbitrary_percentages
+    - vanity_scores
+    - keyword_density_scoring
+    - content_length_scoring
+    - fake_ai_confidence
+    - opaque_algorithms
+
+scoring_architecture:
+
+  overall_discoverability_score:
+    scale: 0_to_100
+
+    weighted_categories:
+      dish_recognition: 20
+      ai_discoverability: 20
+      restaurant_clarity: 15
+      ai_search_visibility: 20
+      dish_understanding: 15
+      local_intent_alignment: 10
+
+dish_recognition:
+
+  purpose:
+    statement: >
+      Measure how effectively dishes can be identified,
+      normalized, and retrieved by search systems.
+
+  scoring_dimensions:
+
+    canonical_dish_match:
+      weight: 25
+
+      evaluates:
+        - canonical_names
+        - alias_recognition
+        - duplicate_resolution
+        - cuisine_consistency
+
+    dish_alias_coverage:
+      weight: 15
+
+      examples:
+        - Butter Chicken vs Murgh Makhani
+        - Veg Pulao vs Vegetable Pulao
+
+    cuisine_origin_clarity:
+      weight: 20
+
+      evaluates:
+        - regional_cuisine_mapping
+        - cuisine_specificity
+        - indian_cuisine_accuracy
+
+    menu_structure_quality:
+      weight: 20
+
+      evaluates:
+        - section_grouping
+        - meal_type_grouping
+        - dish_relationships
+
+    discoverable_naming_quality:
+      weight: 20
+
+      evaluates:
+        - semantic_clarity
+        - ambiguity_reduction
+        - retrieval_readiness
+
+  evidence_output:
+    - normalized_dishes_count
+    - unidentified_dishes
+    - weak_aliases
+    - cuisine_conflicts
+
+ai_discoverability:
+
+  purpose:
+    statement: >
+      Measure readiness for conversational AI systems
+      and AI-generated retrieval environments.
+
+  scoring_dimensions:
+
+    conversational_faq_quality:
+      weight: 25
+
+      evaluates:
+        - conversational_language
+        - concise_answers
+        - ai_answer_quality
+
+    semantic_richness:
+      weight: 25
+
+      evaluates:
+        - ingredient_coverage
+        - cuisine_context
+        - dining_context
+        - semantic_depth
+
+    ai_snippet_quality:
+      weight: 20
+
+      evaluates:
+        - concise_summaries
+        - retrieval_clarity
+        - recommendation_quality
+
+    voice_search_readiness:
+      weight: 15
+
+      evaluates:
+        - short_answers
+        - spoken_query_alignment
+        - conversational_phrasing
+
+    structured_metadata_quality:
+      weight: 15
+
+      evaluates:
+        - schema_consistency
+        - metadata_completeness
+        - semantic_relationships
+
+restaurant_clarity:
+
+  purpose:
+    statement: >
+      Measure how clearly the restaurant identity,
+      cuisine, audience, and dining context are understood.
+
+  scoring_dimensions:
+
+    cuisine_identity_clarity:
+      weight: 25
+
+    ambience_definition:
+      weight: 20
+
+    audience_definition:
+      weight: 15
+
+    dining_intent_mapping:
+      weight: 20
+
+    menu_organization:
+      weight: 20
+
+  evaluates:
+    - family_friendly
+    - office_lunch
+    - buffet_dining
+    - vegetarian_friendly
+    - authentic_regional_food
+
+ai_search_visibility:
+
+  purpose:
+    statement: >
+      Measure probability of appearing in
+      conversational and AI-driven searches.
+
+  scoring_dimensions:
+
+    conversational_query_match:
+      weight: 30
+
+    long_tail_query_alignment:
+      weight: 20
+
+    locality_query_alignment:
+      weight: 20
+
+    dish_level_retrieval:
+      weight: 15
+
+    semantic_consistency:
+      weight: 15
+
+  simulated_queries:
+
+    examples:
+      - best biryani in Morrisville
+      - dosa restaurants near RTP
+      - vegetarian Indian buffet Cary
+      - authentic Andhra food Raleigh
+      - family Indian restaurants near me
+
+  evidence_output:
+    - matched_queries
+    - weak_queries
+    - missing_intents
+    - locality_gaps
+
+dish_understanding:
+
+  purpose:
+    statement: >
+      Measure semantic understanding depth
+      for individual dishes.
+
+  scoring_dimensions:
+
+    ingredient_clarity:
+      weight: 25
+
+    cuisine_context:
+      weight: 20
+
+    spice_level_detection:
+      weight: 10
+
+    dietary_classification:
+      weight: 15
+
+    pairing_relationships:
+      weight: 15
+
+    semantic_description_quality:
+      weight: 15
+
+  semantic_quality_rules:
+    - avoid_generic_ai_fluff
+    - avoid_keyword_stuffing
+    - require_contextual_descriptions
+    - require_retrieval_clarity
+
+local_intent_alignment:
+
+  purpose:
+    statement: >
+      Measure alignment with locality-specific dining intent.
+
+  scoring_dimensions:
+
+    locality_mapping:
+      weight: 25
+
+    landmark_relevance:
+      weight: 20
+
+    office_area_alignment:
+      weight: 15
+
+    family_dining_alignment:
+      weight: 20
+
+    neighborhood_relevance:
+      weight: 20
+
+  locality_contexts:
+    - RTP_office_lunch
+    - Cary_family_dining
+    - Morrisville_Indian_food
+    - Raleigh_buffet_searches
+
+semantic_validation_engine:
+
+  purpose:
+    statement: >
+      Validate semantic quality and retrieval usefulness.
+
+  validation_rules:
+
+    semantic_depth:
+      checks:
+        - ingredient_specificity
+        - cuisine_specificity
+        - contextual_descriptions
+        - dining_context
+
+    conversational_quality:
+      checks:
+        - natural_language
+        - concise_answers
+        - spoken_language_compatibility
+
+    retrieval_quality:
+      checks:
+        - query_alignment
+        - semantic_consistency
+        - locality_relevance
+
+    anti_spam_checks:
+      checks:
+        - keyword_stuffing
+        - repetitive_descriptions
+        - generic_ai_content
+        - semantic_duplication
+
+scoring_outputs:
+
+  restaurant_level:
+
+    outputs:
+      - overall_discoverability_score
+      - ai_visibility_score
+      - dish_recognition_score
+      - conversational_readiness_score
+      - locality_alignment_score
+
+  dish_level:
+
+    outputs:
+      - dish_discoverability_score
+      - semantic_richness_score
+      - ingredient_clarity_score
+      - cuisine_specificity_score
+      - retrieval_readiness_score
+
+  faq_level:
+
+    outputs:
+      - conversational_quality_score
+      - voice_search_score
+      - ai_answer_score
+
+evidence_generation:
+
+  philosophy:
+    statement: >
+      Every score must provide evidence
+      and actionable improvement suggestions.
+
+  evidence_examples:
+
+    dish_understanding:
+      - missing_ingredients
+      - weak_descriptions
+      - ambiguous_dish_names
+
+    ai_visibility:
+      - missing_local_queries
+      - poor_conversational_alignment
+      - weak_snippet_quality
+
+    locality_alignment:
+      - missing_RTP_context
+      - weak_family_dining_signals
+      - poor_buffet_visibility
+
+recommendation_engine:
+
+  philosophy:
+    statement: >
+      Every low score must generate
+      actionable recommendations.
+
+  recommendation_structure:
+
+    includes:
+      - issue_detected
+      - why_it_matters
+      - impact_estimate
+      - recommended_fix
+      - one_click_action
+
+  examples:
+
+    weak_dish_description:
+      recommendation: >
+        Add ingredient-level descriptions
+        for better conversational retrieval.
+
+    weak_local_alignment:
+      recommendation: >
+        Add RTP office lunch context
+        for nearby professional searches.
+
+    weak_faqs:
+      recommendation: >
+        Generate concise voice-friendly FAQs
+        for AI assistants.
+
+confidence_system:
+
+  purpose:
+    statement: >
+      Measure confidence in scoring accuracy.
+
+  confidence_levels:
+    - low
+    - medium
+    - high
+
+  confidence_factors:
+    - metadata_completeness
+    - menu_quality
+    - review_density
+    - semantic_consistency
+    - retrieval_validation
+
+future_readiness:
+
+  phase_2:
+    additions:
+      - embeddings_validation
+      - retrieval_testing
+      - vector_similarity_scoring
+      - conversational_ai_simulation
+
+  phase_3:
+    additions:
+      - real_search_feedback_loops
+      - maps_visibility_tracking
+      - ai_overview_tracking
+      - conversational_search_monitoring
+
+engineering_rules:
+
+  mandatory:
+    - every_score_must_be_explainable
+    - every_score_must_have_evidence
+    - every_score_must_generate_recommendations
+    - every_score_must_be_semantically_grounded
+    - every_score_must_improve_discoverability
+
+  prohibited:
+    - arbitrary_scoring
+    - vanity_metrics
+    - black_box_scoring
+    - keyword_spam_rewards
+    - fake_growth_visualizations
+
+success_criteria:
+
+  technical:
+    - explainable_scores
+    - evidence_based_scoring
+    - stable_semantic_evaluation
+    - accurate_query_alignment
+
+  business:
+    - restaurant_owner_trust
+    - actionable_improvements
+    - measurable_discoverability_growth
+    - high_recommendation_adoption
+
+  strategic:
+    - scoring_becomes_core_moat
+    - scoring_becomes_trusted
+    - scoring_creates_retention
+    - scoring_drives_discoverability_optimization
+```
+
+```yaml id="tirde-discoverability-scoring-engine-v2-5"
+discoverability_scoring_engine:
+  name: TIRDE Explainable Discoverability Intelligence Engine
+  version: 2.5
+  category: Semantic Discoverability Scoring Framework
+
+core_philosophy:
+
+  mission:
+    statement: >
+      Build an explainable, evidence-backed,
+      retrieval-oriented discoverability scoring engine
+      for Indian restaurant optimization.
+
+  strategic_objective:
+    statement: >
+      Measure and improve the probability that
+      restaurants, dishes, and dining intents
+      become discoverable across Google,
+      Maps, conversational AI systems,
+      and local dining searches.
+
+  principles:
+    - scores_must_be_explainable
+    - scores_must_be_actionable
+    - scores_must_be_evidence_based
+    - scores_must_improve_retrieval_probability
+    - scores_must_not_reward_keyword_spam
+    - scores_must_reflect_semantic_quality
+    - scores_must_reflect_local_intent_alignment
+    - scores_must_support_conversational_search
+
+  forbidden_patterns:
+    - arbitrary_percentages
+    - vanity_scores
+    - keyword_density_scoring
+    - content_length_scoring
+    - fake_ai_confidence
+    - opaque_algorithms
+    - decorative_metrics
+    - unverified_semantic_claims
+
+scoring_architecture:
+
+  overall_discoverability_score:
+    scale: 0_to_100
+
+    weighted_categories:
+      dish_recognition: 18
+      ai_discoverability: 18
+      restaurant_clarity: 14
+      ai_search_visibility: 18
+      dish_understanding: 14
+      local_intent_alignment: 10
+      retrieval_validation: 5
+      competitive_visibility: 3
+
+  score_output_structure:
+    required_fields:
+      - score
+      - confidence
+      - evidence
+      - recommendations
+      - improvement_path
+      - expected_impact
+
+dish_recognition:
+
+  purpose:
+    statement: >
+      Measure how effectively dishes can be identified,
+      normalized, and retrieved by search systems.
+
+  scoring_dimensions:
+
+    canonical_dish_match:
+      weight: 25
+
+      evaluates:
+        - canonical_names
+        - alias_recognition
+        - duplicate_resolution
+        - cuisine_consistency
+
+    dish_alias_coverage:
+      weight: 15
+
+      examples:
+        - Butter Chicken vs Murgh Makhani
+        - Veg Pulao vs Vegetable Pulao
+        - Gongura Chicken vs Andhra Gongura Chicken
+
+    cuisine_origin_clarity:
+      weight: 20
+
+      evaluates:
+        - regional_cuisine_mapping
+        - cuisine_specificity
+        - indian_cuisine_accuracy
+
+    menu_structure_quality:
+      weight: 20
+
+      evaluates:
+        - section_grouping
+        - meal_type_grouping
+        - dish_relationships
+        - discoverable_navigation
+
+    discoverable_naming_quality:
+      weight: 20
+
+      evaluates:
+        - semantic_clarity
+        - ambiguity_reduction
+        - retrieval_readiness
+
+  evidence_output:
+    - normalized_dishes_count
+    - unidentified_dishes
+    - weak_aliases
+    - cuisine_conflicts
+    - ambiguous_dish_names
+
+ai_discoverability:
+
+  purpose:
+    statement: >
+      Measure readiness for conversational AI systems
+      and AI-generated retrieval environments.
+
+  scoring_dimensions:
+
+    conversational_faq_quality:
+      weight: 25
+
+      evaluates:
+        - conversational_language
+        - concise_answers
+        - ai_answer_quality
+        - retrieval_readiness
+
+    semantic_richness:
+      weight: 25
+
+      evaluates:
+        - ingredient_coverage
+        - cuisine_context
+        - dining_context
+        - semantic_depth
+        - contextual_clarity
+
+    ai_snippet_quality:
+      weight: 20
+
+      evaluates:
+        - concise_summaries
+        - retrieval_clarity
+        - recommendation_quality
+        - locality_relevance
+
+    voice_search_readiness:
+      weight: 15
+
+      evaluates:
+        - short_answers
+        - spoken_query_alignment
+        - conversational_phrasing
+
+    structured_metadata_quality:
+      weight: 15
+
+      evaluates:
+        - schema_consistency
+        - metadata_completeness
+        - semantic_relationships
+        - entity_linking
+
+restaurant_clarity:
+
+  purpose:
+    statement: >
+      Measure how clearly the restaurant identity,
+      cuisine, audience, and dining context are understood.
+
+  scoring_dimensions:
+
+    cuisine_identity_clarity:
+      weight: 25
+
+    ambience_definition:
+      weight: 20
+
+    audience_definition:
+      weight: 15
+
+    dining_intent_mapping:
+      weight: 20
+
+    menu_organization:
+      weight: 20
+
+  evaluates:
+    - family_friendly
+    - office_lunch
+    - buffet_dining
+    - vegetarian_friendly
+    - authentic_regional_food
+    - premium_dining
+    - casual_dining
+
+ai_search_visibility:
+
+  purpose:
+    statement: >
+      Measure probability of appearing in
+      conversational and AI-driven searches.
+
+  scoring_dimensions:
+
+    conversational_query_match:
+      weight: 30
+
+    long_tail_query_alignment:
+      weight: 20
+
+    locality_query_alignment:
+      weight: 20
+
+    dish_level_retrieval:
+      weight: 15
+
+    semantic_consistency:
+      weight: 15
+
+  simulated_queries:
+
+    examples:
+      - best biryani in Morrisville
+      - dosa restaurants near RTP
+      - vegetarian Indian buffet Cary
+      - authentic Andhra food Raleigh
+      - family Indian restaurants near me
+      - Indian lunch near RTP offices
+
+  evidence_output:
+    - matched_queries
+    - weak_queries
+    - missing_queries
+    - locality_gaps
+    - low_confidence_queries
+
+dish_understanding:
+
+  purpose:
+    statement: >
+      Measure semantic understanding depth
+      for individual dishes.
+
+  scoring_dimensions:
+
+    ingredient_clarity:
+      weight: 25
+
+    cuisine_context:
+      weight: 20
+
+    spice_level_detection:
+      weight: 10
+
+    dietary_classification:
+      weight: 15
+
+    pairing_relationships:
+      weight: 15
+
+    semantic_description_quality:
+      weight: 15
+
+  semantic_quality_rules:
+    - avoid_generic_ai_fluff
+    - avoid_keyword_stuffing
+    - require_contextual_descriptions
+    - require_retrieval_clarity
+    - require_regional_specificity
+
+local_intent_alignment:
+
+  purpose:
+    statement: >
+      Measure alignment with locality-specific dining intent.
+
+  scoring_dimensions:
+
+    locality_mapping:
+      weight: 25
+
+    landmark_relevance:
+      weight: 20
+
+    office_area_alignment:
+      weight: 15
+
+    family_dining_alignment:
+      weight: 20
+
+    neighborhood_relevance:
+      weight: 20
+
+  locality_contexts:
+    - RTP_office_lunch
+    - Cary_family_dining
+    - Morrisville_Indian_food
+    - Raleigh_buffet_searches
+    - late_night_dining
+    - vegetarian_dining
+
+retrieval_validation:
+
+  purpose:
+    statement: >
+      Validate discoverability likelihood
+      against simulated conversational
+      and local search queries.
+
+  query_categories:
+    - dish_plus_location
+    - cuisine_plus_location
+    - dining_intent_plus_location
+    - ambience_plus_audience
+    - meal_type_plus_location
+
+  retrieval_dimensions:
+
+    query_match_strength:
+      weight: 35
+
+    locality_relevance:
+      weight: 20
+
+    conversational_alignment:
+      weight: 20
+
+    semantic_consistency:
+      weight: 15
+
+    contextual_completeness:
+      weight: 10
+
+  outputs:
+    - matched_queries
+    - weak_queries
+    - missing_queries
+    - retrieval_confidence
+    - locality_alignment_confidence
+
+  validation_examples:
+
+    high_value_queries:
+      - best biryani in Morrisville
+      - vegetarian buffet Cary
+      - dosa near RTP
+      - family Indian dinner Raleigh
+      - Andhra lunch near RTP
+
+competitive_visibility:
+
+  purpose:
+    statement: >
+      Compare discoverability strength
+      against nearby competing restaurants.
+
+  comparison_dimensions:
+    - dish_visibility
+    - local_intent_alignment
+    - conversational_readiness
+    - cuisine_authority
+    - semantic_completeness
+    - review_signal_quality
+
+  outputs:
+    - locality_percentile
+    - stronger_than
+    - weaker_than
+    - opportunity_areas
+    - competitor_gaps
+
+  comparison_scope:
+    - same_locality
+    - same_cuisine_type
+    - same_dining_category
+
+confidence_engine:
+
+  purpose:
+    statement: >
+      Measure confidence in scoring accuracy.
+
+  confidence_levels:
+    - low
+    - medium
+    - high
+
+  confidence_factors:
+
+    review_volume:
+      impact: high
+
+    menu_completeness:
+      impact: high
+
+    ontology_confidence:
+      impact: high
+
+    semantic_consistency:
+      impact: medium
+
+    locality_data_quality:
+      impact: medium
+
+    faq_coverage:
+      impact: medium
+
+    metadata_verification:
+      impact: high
+
+  outputs:
+    - overall_confidence
+    - low_confidence_areas
+    - stale_confidence_warnings
+
+freshness_decay:
+
+  purpose:
+    statement: >
+      Reduce confidence and discoverability reliability
+      when restaurant data becomes stale.
+
+  decay_dimensions:
+    - menu_last_updated
+    - review_freshness
+    - locality_signal_age
+    - faq_validation_age
+    - operating_hours_age
+
+  freshness_scoring:
+
+    excellent:
+      days: 0_to_14
+
+    good:
+      days: 15_to_45
+
+    aging:
+      days: 46_to_90
+
+    stale:
+      days: 90_plus
+
+  outputs:
+    - freshness_score
+    - stale_metadata_warnings
+    - outdated_content_flags
+
+evidence_weighting:
+
+  purpose:
+    statement: >
+      Weight evidence sources based on reliability.
+
+  evidence_types:
+
+    verified_menu_data:
+      confidence: 0.95
+
+    restaurant_provided_data:
+      confidence: 0.91
+
+    repeated_review_patterns:
+      confidence: 0.84
+
+    locality_behavior_patterns:
+      confidence: 0.81
+
+    inferred_ai_metadata:
+      confidence: 0.62
+
+    weak_review_signals:
+      confidence: 0.48
+
+  rules:
+    - verified_sources_override_ai_inference
+    - repeated_patterns_increase_confidence
+    - weak_signals_require_validation
+
+ontology_confidence:
+
+  purpose:
+    statement: >
+      Measure confidence in cuisine and dish interpretation.
+
+  dimensions:
+
+    dish_origin_confidence:
+      evaluates:
+        - regional_accuracy
+        - cuisine_consistency
+
+    semantic_ambiguity:
+      evaluates:
+        - conflicting_dish_meanings
+        - regional_variations
+
+    cuisine_mapping_confidence:
+      evaluates:
+        - ontology_alignment
+        - dish_relationship_accuracy
+
+  ambiguity_examples:
+    - curry
+    - korma
+    - chaman
+    - pulao
+    - 65
+
+semantic_validation_engine:
+
+  purpose:
+    statement: >
+      Validate semantic quality and retrieval usefulness.
+
+  validation_rules:
+
+    semantic_depth:
+      checks:
+        - ingredient_specificity
+        - cuisine_specificity
+        - contextual_descriptions
+        - dining_context
+
+    conversational_quality:
+      checks:
+        - natural_language
+        - concise_answers
+        - spoken_language_compatibility
+
+    retrieval_quality:
+      checks:
+        - query_alignment
+        - semantic_consistency
+        - locality_relevance
+
+    anti_spam_checks:
+      checks:
+        - keyword_stuffing
+        - repetitive_descriptions
+        - generic_ai_content
+        - semantic_duplication
+
+    hallucination_prevention:
+      checks:
+        - unsupported_authenticity_claims
+        - unsupported_premium_claims
+        - unsupported_ambience_claims
+        - unsupported_dining_claims
+
+hallucination_prevention:
+
+  purpose:
+    statement: >
+      Prevent unsupported AI-generated semantic claims.
+
+  evidence_thresholds:
+
+    premium_claims:
+      minimum_review_mentions: 5
+
+    ambience_claims:
+      minimum_review_mentions: 3
+
+    authenticity_claims:
+      minimum_consistency_score: 0.70
+
+    family_friendly_claims:
+      minimum_review_mentions: 4
+
+  prohibited_claims:
+    - unsupported_best_in_city
+    - unsupported_authenticity
+    - unsupported_premium_positioning
+
+scoring_outputs:
+
+  restaurant_level:
+
+    outputs:
+      - overall_discoverability_score
+      - ai_visibility_score
+      - dish_recognition_score
+      - conversational_readiness_score
+      - locality_alignment_score
+      - retrieval_validation_score
+      - competitive_visibility_score
+
+  dish_level:
+
+    outputs:
+      - dish_discoverability_score
+      - semantic_richness_score
+      - ingredient_clarity_score
+      - cuisine_specificity_score
+      - retrieval_readiness_score
+
+  faq_level:
+
+    outputs:
+      - conversational_quality_score
+      - voice_search_score
+      - ai_answer_score
+
+evidence_generation:
+
+  philosophy:
+    statement: >
+      Every score must provide evidence
+      and actionable improvement suggestions.
+
+  evidence_examples:
+
+    dish_understanding:
+      - missing_ingredients
+      - weak_descriptions
+      - ambiguous_dish_names
+
+    ai_visibility:
+      - missing_local_queries
+      - poor_conversational_alignment
+      - weak_snippet_quality
+
+    locality_alignment:
+      - missing_RTP_context
+      - weak_family_dining_signals
+      - poor_buffet_visibility
+
+    retrieval_validation:
+      - low_query_match_strength
+      - missing_dining_intents
+      - weak_location_alignment
+
+recommendation_engine:
+
+  philosophy:
+    statement: >
+      Every low score must generate
+      actionable recommendations.
+
+  recommendation_structure:
+
+    required_fields:
+      - issue_detected
+      - why_it_matters
+      - impact_estimate
+      - recommended_fix
+      - one_click_action
+      - expected_discoverability_gain
+
+  examples:
+
+    weak_dish_description:
+      recommendation: >
+        Add ingredient-level descriptions
+        for better conversational retrieval.
+
+    weak_local_alignment:
+      recommendation: >
+        Add RTP office lunch context
+        for nearby professional searches.
+
+    weak_faqs:
+      recommendation: >
+        Generate concise voice-friendly FAQs
+        for AI assistants.
+
+    weak_retrieval_alignment:
+      recommendation: >
+        Improve locality-based dish relationships
+        for conversational search coverage.
+
+query_value_weighting:
+
+  purpose:
+    statement: >
+      Prioritize commercially valuable search queries.
+
+  query_priority:
+
+    tier_1:
+      weight: high
+
+      categories:
+        - dish_plus_location
+        - cuisine_plus_location
+        - dining_intent_plus_location
+
+    tier_2:
+      weight: medium
+
+      categories:
+        - ambience_plus_audience
+        - meal_type_plus_location
+
+    tier_3:
+      weight: low
+
+      categories:
+        - generic_broad_queries
+
+future_readiness:
+
+  phase_2:
+    additions:
+      - embeddings_validation
+      - retrieval_testing
+      - vector_similarity_scoring
+      - conversational_ai_simulation
+
+  phase_3:
+    additions:
+      - real_search_feedback_loops
+      - maps_visibility_tracking
+      - ai_overview_tracking
+      - conversational_search_monitoring
+      - locality_query_trend_analysis
+
+engineering_rules:
+
+  mandatory:
+    - every_score_must_be_explainable
+    - every_score_must_have_evidence
+    - every_score_must_generate_recommendations
+    - every_score_must_be_semantically_grounded
+    - every_score_must_improve_discoverability
+    - every_score_must_include_confidence
+
+  prohibited:
+    - arbitrary_scoring
+    - vanity_metrics
+    - black_box_scoring
+    - keyword_spam_rewards
+    - fake_growth_visualizations
+    - unsupported_ai_claims
+
+success_criteria:
+
+  technical:
+    - explainable_scores
+    - evidence_based_scoring
+    - stable_semantic_evaluation
+    - accurate_query_alignment
+    - confidence_calibrated_outputs
+
+  business:
+    - restaurant_owner_trust
+    - actionable_improvements
+    - measurable_discoverability_growth
+    - high_recommendation_adoption
+
+  strategic:
+    - scoring_becomes_core_moat
+    - scoring_becomes_trusted
+    - scoring_creates_retention
+    - scoring_drives_discoverability_optimization
+    - scoring_supports_competitive_positioning
+```
+

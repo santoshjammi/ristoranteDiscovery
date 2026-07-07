@@ -1,0 +1,398 @@
+```yaml
+project:
+  name: Restaurant Discovery Intelligence Platform
+  codename: RDI
+  version: 1.0
+  type: AI-Ready Local Discovery Intelligence System
+  status: MVP Planning
+
+vision:
+  statement: >
+    Build an intelligence infrastructure layer that helps restaurants
+    become discoverable across AI search, conversational assistants,
+    local SEO, maps, voice search, and recommendation systems.
+
+  long_term_goal: >
+    Create the largest structured restaurant discovery intelligence graph
+    optimized for search engines, AI retrieval systems, and local intent platforms.
+
+core_problem:
+  restaurants:
+    - Restaurant data is fragmented and poorly structured
+    - Menus are often unindexable PDFs or images
+    - Reviews are underutilized
+    - Local SEO is generic and outdated
+    - Restaurants are not optimized for AI search systems
+    - Voice search visibility is weak
+    - Discovery intent is poorly captured
+
+  consumers:
+    - Hard to discover relevant restaurants conversationally
+    - Lack of structured cuisine and dish intelligence
+    - Search results are inconsistent
+    - Dietary and contextual filters are weak
+
+market_positioning:
+  category: Restaurant Discovery Intelligence
+  positioning_statement: >
+    We help restaurants become discoverable in AI search,
+    conversational assistants, voice search, and local discovery systems.
+
+target_customers:
+  primary:
+    - Independent restaurants
+    - Cloud kitchens
+    - Restaurant chains
+    - Cafes
+    - Fine dining restaurants
+
+  secondary:
+    - Restaurant marketing agencies
+    - Food bloggers
+    - Local business aggregators
+    - Hospitality consultants
+
+mvp_goals:
+  business:
+    - Acquire first 10 restaurant clients
+    - Validate recurring service model
+    - Build reusable metadata infrastructure
+    - Create repeatable onboarding workflows
+    - Validate AI-search discoverability improvements
+
+  technical:
+    - Normalize restaurant menu data
+    - Generate schema-ready structured data
+    - Build review intelligence engine
+    - Generate AI-optimized FAQs
+    - Create local SEO automation workflows
+
+non_goals:
+  - POS system replacement
+  - Inventory management
+  - Restaurant ERP
+  - Food delivery aggregation
+  - Table reservation engine
+  - Payroll systems
+  - Kitchen management systems
+
+core_modules:
+
+  menu_intelligence:
+    description: >
+      Extract, normalize, structure, and enrich restaurant menu data.
+
+    features:
+      - PDF menu parsing
+      - OCR extraction
+      - Dish categorization
+      - Cuisine tagging
+      - Dietary tagging
+      - Spice-level tagging
+      - Price normalization
+      - Meal-type classification
+      - Structured menu schema generation
+
+    outputs:
+      - JSON-LD schema
+      - Search-indexable menu pages
+      - AI-ready menu entities
+      - Voice-search snippets
+
+  review_intelligence:
+    description: >
+      Transform customer reviews into structured business intelligence.
+
+    features:
+      - Review ingestion
+      - Sentiment analysis
+      - Dish popularity extraction
+      - Ambience descriptors
+      - Service quality insights
+      - Topic clustering
+      - Complaint detection
+      - Audience segmentation
+
+    outputs:
+      - Review summaries
+      - SEO snippets
+      - Dynamic FAQs
+      - Popular dish rankings
+      - Customer perception profiles
+
+  faq_generation_engine:
+    description: >
+      Generate conversational and search-optimized FAQs.
+
+    features:
+      - AI-generated FAQs
+      - Local intent FAQs
+      - Dietary FAQs
+      - Event-related FAQs
+      - Parking FAQs
+      - Family-friendly FAQs
+      - Timing-based FAQs
+      - Accessibility FAQs
+
+    outputs:
+      - FAQ schema
+      - AI-search answers
+      - Voice assistant responses
+      - Local landing page content
+
+  local_seo_engine:
+    description: >
+      Generate and optimize local search visibility assets.
+
+    features:
+      - Schema generation
+      - Metadata optimization
+      - Geo-tag optimization
+      - Location landing pages
+      - Nearby landmark optimization
+      - Cuisine-intent targeting
+      - Search intent clustering
+      - Google Business Profile enhancement suggestions
+
+    outputs:
+      - SEO pages
+      - Structured metadata
+      - Search snippets
+      - Local search content
+
+  conversational_search_engine:
+    description: >
+      Prepare restaurant data for AI and voice retrieval systems.
+
+    features:
+      - Conversational query mapping
+      - Intent-response generation
+      - Semantic tagging
+      - Entity relationships
+      - Voice-search optimization
+      - AI-answer formatting
+      - Retrieval chunk preparation
+
+    outputs:
+      - Conversational search responses
+      - AI retrieval snippets
+      - Intent-specific summaries
+
+data_architecture:
+
+  entity_types:
+    - restaurant
+    - cuisine
+    - dish
+    - dietary_tag
+    - ambience
+    - service_type
+    - location
+    - review_topic
+    - user_intent
+    - faq
+    - menu_item
+
+  metadata_layers:
+    restaurant_metadata:
+      - name
+      - location
+      - timings
+      - cuisine_types
+      - price_range
+      - dietary_support
+      - amenities
+      - ambience
+      - parking
+      - delivery_support
+
+    menu_metadata:
+      - ingredients
+      - dietary_type
+      - spice_level
+      - cuisine_origin
+      - meal_type
+      - allergens
+      - popularity_score
+
+    review_metadata:
+      - sentiment
+      - emotion
+      - audience_type
+      - recurring_topics
+      - issue_frequency
+
+search_intelligence:
+
+  search_intent_categories:
+    - nearby_discovery
+    - family_restaurants
+    - budget_food
+    - romantic_places
+    - work_friendly_cafes
+    - vegan_food
+    - late_night_food
+    - birthday_places
+    - quick_bites
+    - premium_dining
+
+  conversational_queries:
+    examples:
+      - "best biryani near me"
+      - "restaurants open late night"
+      - "family restaurants with vegan options"
+      - "best cafes for work"
+      - "budget-friendly lunch places"
+
+tech_stack:
+
+  frontend:
+    - React
+    - Next.js
+    - TailwindCSS
+    - shadcn/ui
+
+  backend:
+    - Node.js
+    - Express.js
+
+  database:
+    - PostgreSQL
+    - Redis
+
+  ai_processing:
+    - OpenAI APIs
+    - Embedding pipelines
+    - Vector indexing
+
+  scraping_processing:
+    - Playwright
+    - OCR pipelines
+    - PDF parsers
+
+  search_indexing:
+    - Elasticsearch
+    - OpenSearch
+
+  deployment:
+    - Docker
+    - Nginx
+    - Cloudflare
+
+future_rag_readiness:
+  objectives:
+    - Chunkable metadata structures
+    - Retrieval-ready entities
+    - Semantic search compatibility
+    - Embedding-friendly architecture
+    - Structured conversational retrieval
+
+  chunking_strategy:
+    - restaurant_level
+    - menu_section_level
+    - dish_level
+    - faq_level
+    - review_topic_level
+
+service_model:
+
+  onboarding_flow:
+    - Restaurant discovery
+    - Menu ingestion
+    - Review ingestion
+    - Metadata generation
+    - SEO enhancement generation
+    - FAQ generation
+    - Publishing recommendations
+
+  recurring_services:
+    - Monthly review intelligence updates
+    - SEO refreshes
+    - FAQ updates
+    - Search trend optimization
+    - Competitor visibility tracking
+
+pricing_strategy:
+  starter:
+    target: Independent restaurants
+    pricing_model: Monthly subscription + setup fee
+
+  growth:
+    target: Multi-location restaurants
+    pricing_model: Recurring intelligence retainer
+
+  enterprise:
+    target: Restaurant chains
+    pricing_model: Custom intelligence infrastructure
+
+analytics:
+  metrics:
+    - Search visibility growth
+    - AI snippet appearances
+    - Local ranking improvements
+    - Review sentiment trends
+    - FAQ engagement
+    - Voice-search discoverability
+    - Organic traffic growth
+
+mvp_execution_plan:
+
+  phase_1:
+    duration: 2 weeks
+    objectives:
+      - Menu parser MVP
+      - FAQ generator MVP
+      - Schema generator MVP
+      - Review ingestion MVP
+
+  phase_2:
+    duration: 2 weeks
+    objectives:
+      - Local SEO automation
+      - Conversational query generation
+      - Metadata pipelines
+      - Restaurant dashboard
+
+  phase_3:
+    duration: 2 weeks
+    objectives:
+      - Client onboarding workflows
+      - Multi-restaurant support
+      - Reporting system
+      - AI-search optimization layer
+
+  phase_4:
+    duration: Ongoing
+    objectives:
+      - Restaurant knowledge graph
+      - Discovery intelligence engine
+      - Conversational recommendation systems
+      - Predictive discovery analytics
+
+risks:
+  - Overengineering too early
+  - Building generalized systems before validation
+  - Poor restaurant onboarding workflows
+  - Low-quality scraped data
+  - Inconsistent menu formats
+  - AI hallucination risks in generated content
+
+success_criteria:
+  short_term:
+    - First 10 paying restaurants
+    - Repeatable onboarding
+    - Demonstrated SEO improvements
+    - Monthly recurring revenue
+
+  medium_term:
+    - Metadata intelligence moat
+    - Restaurant knowledge graph
+    - Productized workflows
+    - AI discovery optimization engine
+
+  long_term:
+    - Dominant AI-ready restaurant discovery layer
+    - Search intelligence platform
+    - Conversational food discovery engine
+```
+

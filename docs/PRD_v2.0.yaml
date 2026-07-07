@@ -1,0 +1,478 @@
+```yaml id="d0e-prd-v2"
+project:
+  name: Restaurant Discoverability Optimization Engine
+  codename: DOE
+  version: 2.0
+  category: AI Search & Local Discovery Infrastructure
+  architecture_type: Semantic Discoverability Engine
+
+vision:
+  statement: >
+    Build the semantic infrastructure layer that enables restaurants
+    to rank, appear, and be recommended across Google Search,
+    Google Maps, AI Overviews, conversational AI systems,
+    voice assistants, and future retrieval platforms.
+
+  core_thesis: >
+    Search is evolving from keyword matching toward
+    semantic retrieval, entity relationships, contextual ranking,
+    and conversational recommendations.
+
+  mission:
+    - Transform unstructured restaurant information into retrieval-ready intelligence
+    - Optimize restaurants for AI-driven discovery systems
+    - Build structured semantic restaurant entities
+    - Improve discoverability across conversational search ecosystems
+
+strategic_positioning:
+  category: Discoverability Optimization Engine
+
+  positioning_statement: >
+    We optimize restaurants for discoverability across
+    search engines, AI assistants, conversational retrieval,
+    local maps, and voice search systems.
+
+  differentiation:
+    - Not a generic SEO tool
+    - Not a restaurant ERP
+    - Not a marketing automation platform
+    - Not a chatbot platform
+    - Not a website builder
+
+  unique_advantage:
+    - Semantic restaurant intelligence
+    - Intent-aware metadata generation
+    - Conversational search optimization
+    - AI retrieval optimization
+    - Structured entity enrichment
+
+business_objectives:
+  short_term:
+    - Validate discoverability improvement workflows
+    - Acquire initial restaurant customers
+    - Establish measurable ranking improvements
+    - Build reusable semantic pipelines
+
+  medium_term:
+    - Build restaurant intent graph
+    - Create semantic restaurant knowledge layer
+    - Establish retrieval scoring framework
+    - Create discoverability benchmarking system
+
+  long_term:
+    - Become the semantic indexing layer for restaurant discovery
+    - Power conversational restaurant recommendations
+    - Build AI-search authority graph for local dining
+
+core_problem:
+  search_systems:
+    - Restaurant data is fragmented
+    - Menus are poorly structured
+    - Dish-level indexing is weak
+    - Reviews lack semantic enrichment
+    - Local intent mapping is inconsistent
+    - AI systems struggle with restaurant retrieval context
+
+  restaurants:
+    - Poor long-tail discoverability
+    - Weak conversational search presence
+    - Incomplete structured metadata
+    - Generic local SEO implementations
+    - Low AI-search visibility
+
+success_metrics:
+  discoverability:
+    - Google Maps ranking improvements
+    - AI Overview appearance frequency
+    - Long-tail query visibility
+    - Dish-level indexing growth
+    - Conversational retrieval coverage
+    - Voice-search retrieval success rate
+
+  semantic_quality:
+    - Entity completeness score
+    - Intent alignment score
+    - Structured metadata coverage
+    - FAQ retrieval quality
+    - Review enrichment density
+
+  business:
+    - Client retention rate
+    - Discoverability score improvement
+    - Organic traffic increase
+    - AI citation frequency
+
+platform_scope:
+
+  included:
+    - Semantic menu indexing
+    - Conversational FAQ generation
+    - Review intelligence extraction
+    - Discoverability scoring
+    - Local intent optimization
+    - Schema generation
+    - Retrieval snippet generation
+    - AI-search optimization
+    - Voice-search optimization
+    - Entity enrichment
+
+  excluded:
+    - POS systems
+    - Inventory management
+    - CRM systems
+    - Reservation engines
+    - Loyalty systems
+    - Generic analytics dashboards
+    - Social media publishing
+    - Campaign management
+
+core_architecture:
+
+  ingestion_layer:
+    responsibilities:
+      - Menu ingestion
+      - Review ingestion
+      - Restaurant metadata ingestion
+      - Google Business Profile ingestion
+      - Website metadata ingestion
+
+  normalization_layer:
+    responsibilities:
+      - Dish normalization
+      - Cuisine normalization
+      - Price normalization
+      - Timing normalization
+      - Attribute standardization
+
+  semantic_enrichment_layer:
+    responsibilities:
+      - Intent extraction
+      - Audience extraction
+      - Ambience classification
+      - Conversational query mapping
+      - Review semantic enrichment
+      - Entity relationship mapping
+
+  discoverability_layer:
+    responsibilities:
+      - Retrieval optimization
+      - AI snippet generation
+      - FAQ optimization
+      - Search intent alignment
+      - Local relevance optimization
+      - Voice-search optimization
+
+  scoring_layer:
+    responsibilities:
+      - Discoverability scoring
+      - Semantic completeness scoring
+      - Intent alignment scoring
+      - Retrieval confidence scoring
+      - Entity quality scoring
+
+core_modules:
+
+  menu_discoverability_engine:
+    purpose: >
+      Transform menus into retrieval-ready semantic entities.
+
+    features:
+      - PDF parsing
+      - OCR extraction
+      - Dish entity normalization
+      - Ingredient extraction
+      - Dietary tagging
+      - Cuisine tagging
+      - Meal classification
+      - Allergen tagging
+      - Dish relationship mapping
+      - Dish discoverability scoring
+
+    outputs:
+      - Structured menu entities
+      - JSON-LD menu schema
+      - AI retrieval snippets
+      - Dish-level indexable pages
+
+  conversational_faq_engine:
+    purpose: >
+      Generate AI-search-friendly conversational answers.
+
+    features:
+      - Intent-aware FAQ generation
+      - Voice-search optimization
+      - Local conversational queries
+      - Retrieval-focused answer formatting
+      - Concise AI-answer generation
+      - FAQ semantic clustering
+
+    outputs:
+      - FAQ schema
+      - Voice snippets
+      - Conversational retrieval blocks
+      - AI-answer sections
+
+  semantic_review_engine:
+    purpose: >
+      Extract contextual discovery intelligence from reviews.
+
+    features:
+      - Sentiment analysis
+      - Context extraction
+      - Audience identification
+      - Use-case extraction
+      - Emotional mapping
+      - Dish popularity extraction
+      - Ambience intelligence
+      - Complaint clustering
+
+    outputs:
+      - Ambience descriptors
+      - Audience metadata
+      - Intent indicators
+      - Conversational recommendation signals
+
+  local_intent_engine:
+    purpose: >
+      Align restaurants with high-intent local discovery patterns.
+
+    features:
+      - Nearby landmark mapping
+      - Neighborhood association
+      - Occasion mapping
+      - Time-based dining intent
+      - Budget segmentation
+      - Audience segmentation
+      - Local query clustering
+
+    outputs:
+      - Intent-specific landing data
+      - Geo-context metadata
+      - Local retrieval enrichment
+
+  schema_optimization_engine:
+    purpose: >
+      Build semantically consistent structured metadata.
+
+    features:
+      - Restaurant schema
+      - FoodMenu schema
+      - FAQ schema
+      - Review schema
+      - Combined entity graph generation
+      - Opening hours normalization
+      - Geo metadata formatting
+
+    outputs:
+      - JSON-LD
+      - Structured entity graphs
+      - Search-engine-readable metadata
+
+  retrieval_snippet_engine:
+    purpose: >
+      Generate AI-search and conversational retrieval summaries.
+
+    features:
+      - AI snippet generation
+      - Dish summaries
+      - Ambience summaries
+      - Audience summaries
+      - Occasion summaries
+      - Local recommendation summaries
+
+    outputs:
+      - AI Overview snippets
+      - Voice assistant summaries
+      - Conversational recommendation blocks
+
+discoverability_scoring:
+
+  scoring_dimensions:
+    - semantic_completeness
+    - entity_consistency
+    - conversational_readiness
+    - local_intent_coverage
+    - dish_indexability
+    - review_signal_density
+    - retrieval_alignment
+
+  scoring_outputs:
+    - overall_discoverability_score
+    - ai_visibility_score
+    - local_search_score
+    - conversational_search_score
+    - menu_indexability_score
+
+semantic_taxonomy:
+
+  ambience_types:
+    - quiet
+    - romantic
+    - family_friendly
+    - premium
+    - casual
+    - rooftop
+    - coworking_friendly
+
+  audience_types:
+    - students
+    - professionals
+    - families
+    - tourists
+    - couples
+    - remote_workers
+
+  dining_intents:
+    - quick_bites
+    - work_meetings
+    - date_night
+    - birthday_dining
+    - family_dinner
+    - late_night_food
+    - premium_experience
+
+  cuisine_taxonomy:
+    - regional_indian
+    - asian
+    - continental
+    - fusion
+    - vegan
+    - cafe
+    - bakery
+
+rag_readiness:
+
+  chunking_strategy:
+    - restaurant_chunk
+    - menu_section_chunk
+    - dish_chunk
+    - faq_chunk
+    - review_cluster_chunk
+    - ambience_chunk
+    - recommendation_chunk
+
+  retrieval_objectives:
+    - conversational retrieval
+    - semantic recommendation
+    - long-tail query matching
+    - intent-based ranking
+    - contextual restaurant retrieval
+
+  embedding_targets:
+    - dishes
+    - reviews
+    - FAQs
+    - ambience descriptors
+    - audience profiles
+    - local intent summaries
+
+search_query_examples:
+  conversational:
+    - "best biryani near me"
+    - "quiet cafes for work"
+    - "restaurants for birthday dinner"
+    - "family restaurants with vegan food"
+    - "late night food near metro station"
+
+  retrieval_patterns:
+    - cuisine + occasion
+    - ambience + audience
+    - budget + locality
+    - dietary + timing
+    - dish + neighborhood
+
+technical_architecture:
+
+  frontend:
+    - Next.js
+    - React
+    - TailwindCSS
+    - shadcn/ui
+
+  backend:
+    - Node.js
+    - Express.js
+
+  databases:
+    primary:
+      - PostgreSQL
+
+    future:
+      - pgvector
+      - Redis
+
+  processing:
+    - Playwright
+    - OCR pipelines
+    - Queue workers
+    - AI enrichment pipelines
+
+  search:
+    - OpenSearch
+    - Elasticsearch
+
+  deployment:
+    - Docker
+    - Nginx
+    - Cloudflare
+
+engineering_constraints:
+
+  architectural_rules:
+    - Every feature must improve discoverability
+    - No operational restaurant features
+    - No unnecessary dashboards
+    - Metadata-first architecture
+    - Retrieval-oriented design
+    - Semantic consistency enforcement
+
+  performance_rules:
+    - Asynchronous enrichment pipelines
+    - Queue-based processing
+    - Rebuildable enrichment jobs
+    - Stateless API architecture
+
+future_evolution:
+
+  phase_3:
+    - AI visibility benchmarking
+    - Competitor discoverability analysis
+    - Intent gap analysis
+    - Retrieval confidence modeling
+
+  phase_4:
+    - Semantic restaurant knowledge graph
+    - Conversational recommendation engine
+    - Cross-platform AI retrieval optimization
+    - Predictive discovery analytics
+
+major_risks:
+  - Overengineering retrieval systems too early
+  - Building complex scoring without ranking validation
+  - Generic AI content generation
+  - Low-quality semantic enrichment
+  - Weak onboarding experience
+  - Insufficient discoverability measurements
+
+execution_priorities:
+
+  immediate:
+    - Menu normalization
+    - FAQ generation
+    - Review enrichment
+    - Schema optimization
+    - Local intent extraction
+
+  next:
+    - Discoverability scoring
+    - Retrieval snippet generation
+    - Semantic taxonomy engine
+    - Conversational optimization
+
+  later:
+    - Embeddings
+    - Semantic ranking
+    - Vector retrieval
+    - Knowledge graph relationships
+```
+

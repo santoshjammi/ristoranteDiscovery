@@ -1,0 +1,579 @@
+```yaml id="restaurant-discoverability-engine-v3"
+project:
+  name: Triangle Indian Restaurant Discoverability Engine
+  codename: TIRDE
+  version: 3.0
+  status: Execution PRD
+  category: Local Semantic Discoverability Infrastructure
+
+business_context:
+  target_region:
+    country: USA
+    state: North Carolina
+    focus_area:
+      - Raleigh
+      - Morrisville
+      - Cary
+      - RTP Corridor
+
+  niche_focus:
+    primary:
+      - Indian Restaurants
+
+    secondary_future:
+      - Indian Cafes
+      - Sweet Shops
+      - Vegetarian Restaurants
+      - Regional Cuisine Restaurants
+
+  positioning:
+    statement: >
+      We help Indian restaurants become discoverable
+      across Google Search, Google Maps,
+      AI assistants, voice search,
+      and conversational discovery systems.
+
+core_thesis:
+  statement: >
+    Restaurant discoverability is shifting from
+    keyword SEO toward semantic retrieval,
+    conversational recommendations,
+    dish-level indexing,
+    and intent-aware search systems.
+
+  strategic_hypothesis:
+    - Indian cuisine has strong semantic richness
+    - Dish-level search intent is underserved
+    - Restaurant menus are poorly indexable
+    - AI systems require structured restaurant intelligence
+    - Local dining searches are highly intent-driven
+
+mission:
+  short_term:
+    - Build semantic discoverability infrastructure
+    - Improve restaurant search visibility
+    - Validate measurable ranking improvements
+    - Create reusable ingestion pipelines
+
+  long_term:
+    - Become the semantic intelligence layer
+      for Indian restaurant discovery
+    - Build the Indian dining ontology graph
+    - Power conversational restaurant retrieval
+
+primary_goals:
+  - Increase Google discoverability
+  - Improve Google Maps visibility
+  - Improve conversational AI retrieval
+  - Improve dish-level indexing
+  - Improve long-tail search coverage
+  - Improve AI Overview eligibility
+  - Improve voice-search readiness
+
+non_goals:
+  - POS systems
+  - Restaurant ERP
+  - Reservation systems
+  - Inventory management
+  - CRM systems
+  - Loyalty systems
+  - Campaign automation
+  - Social media scheduling
+  - Generic analytics dashboards
+
+target_users:
+  restaurant_owners:
+    motivations:
+      - More discoverability
+      - More local customers
+      - Better Google visibility
+      - Better Maps presence
+      - Better dish discoverability
+
+  restaurant_marketers:
+    motivations:
+      - Better structured SEO
+      - AI-search optimization
+      - Competitive discoverability
+
+core_offering:
+  name: Discoverability Optimization System
+
+  value_proposition:
+    - Make restaurant menus indexable
+    - Improve dish discoverability
+    - Structure restaurant data for AI retrieval
+    - Generate conversational search visibility
+    - Improve local dining intent alignment
+
+market_differentiation:
+  traditional_agencies:
+    weaknesses:
+      - Generic SEO
+      - Keyword stuffing
+      - Blog-heavy strategies
+      - Weak menu indexing
+      - Poor semantic structure
+
+  platform_advantages:
+    - Dish-level indexing
+    - Indian cuisine ontology
+    - Conversational retrieval optimization
+    - AI-search optimization
+    - Intent-based restaurant enrichment
+
+semantic_scope:
+  cuisine_taxonomy:
+    - North Indian
+    - South Indian
+    - Andhra
+    - Telangana
+    - Hyderabadi
+    - Punjabi
+    - Gujarati
+    - Indo-Chinese
+    - Vegetarian
+    - Street Food
+    - Indian Sweets
+
+  dining_intents:
+    - family_dinner
+    - office_lunch
+    - vegetarian_dining
+    - buffet_dining
+    - date_night
+    - quick_takeout
+    - authentic_regional_food
+    - premium_dining
+    - casual_dining
+    - late_night_food
+
+  audience_segments:
+    - families
+    - professionals
+    - students
+    - tourists
+    - couples
+    - vegetarian_customers
+
+core_architecture:
+
+  ingestion_layer:
+    objective: >
+      Acquire restaurant entities and source data.
+
+    sources:
+      - restaurant_websites
+      - PDF_menus
+      - Google_Business_Profile
+      - review_sources
+      - manual_restaurant_inputs
+
+    responsibilities:
+      - restaurant_discovery
+      - metadata_capture
+      - menu_capture
+      - review_capture
+      - schema_capture
+
+  canonicalization_layer:
+    objective: >
+      Normalize restaurant and dish entities.
+
+    responsibilities:
+      - duplicate_detection
+      - canonical_restaurant_ids
+      - dish_alias_mapping
+      - cuisine_normalization
+      - geo_normalization
+      - phone_normalization
+
+  semantic_enrichment_layer:
+    objective: >
+      Transform raw restaurant data into
+      discoverability intelligence.
+
+    responsibilities:
+      - dish_entity_extraction
+      - ambience_detection
+      - dining_intent_mapping
+      - audience_detection
+      - conversational_query_mapping
+      - review_semantic_extraction
+
+  discoverability_layer:
+    objective: >
+      Optimize restaurant data for
+      retrieval and search systems.
+
+    responsibilities:
+      - schema_generation
+      - faq_generation
+      - ai_snippet_generation
+      - dish_discoverability_pages
+      - conversational_content_generation
+      - local_intent_optimization
+
+  scoring_layer:
+    objective: >
+      Quantify discoverability readiness.
+
+    responsibilities:
+      - discoverability_scoring
+      - ai_visibility_scoring
+      - menu_indexability_scoring
+      - local_intent_coverage_scoring
+      - conversational_readiness_scoring
+
+core_modules:
+
+  restaurant_entity_engine:
+    description: >
+      Canonical restaurant identity management.
+
+    features:
+      - canonical_ids
+      - alias_tracking
+      - geo_coordinates
+      - locality_mapping
+      - cuisine_classification
+      - operating_hours
+      - metadata_confidence_scoring
+
+  menu_intelligence_engine:
+    description: >
+      Transform menus into discoverable semantic entities.
+
+    features:
+      - PDF_parsing
+      - OCR_processing
+      - menu_section_detection
+      - dish_entity_extraction
+      - ingredient_extraction
+      - price_extraction
+      - spice_level_detection
+      - dietary_tagging
+      - allergen_detection
+      - cuisine_origin_mapping
+
+    outputs:
+      - structured_menu_schema
+      - dish_entities
+      - menu_jsonld
+      - discoverable_dish_pages
+
+  dish_discoverability_engine:
+    description: >
+      Optimize dishes for search and conversational retrieval.
+
+    features:
+      - dish_alias_mapping
+      - semantic_dish_descriptions
+      - dish_search_terms
+      - cuisine_relationship_mapping
+      - meal_type_mapping
+      - regional_origin_mapping
+
+    outputs:
+      - dish_snippets
+      - dish_metadata
+      - dish_search_pages
+      - ai_ready_dish_entities
+
+  review_semantic_engine:
+    description: >
+      Extract discoverability intelligence from reviews.
+
+    features:
+      - sentiment_analysis
+      - ambience_extraction
+      - audience_extraction
+      - emotional_context_detection
+      - dish_popularity_detection
+      - complaint_detection
+      - service_quality_detection
+      - authenticity_signals
+
+    outputs:
+      - ambience_tags
+      - dining_context_tags
+      - review_snippets
+      - conversational_signals
+
+  conversational_query_engine:
+    description: >
+      Generate conversational retrieval structures.
+
+    features:
+      - ai_faq_generation
+      - local_query_generation
+      - voice_search_queries
+      - dining_intent_queries
+      - conversational_snippet_generation
+
+    outputs:
+      - faq_schema
+      - ai_search_snippets
+      - conversational_answers
+      - voice_ready_responses
+
+  local_intent_engine:
+    description: >
+      Map restaurants to local dining intent.
+
+    features:
+      - nearby_landmark_mapping
+      - neighborhood_association
+      - office_area_mapping
+      - family_dining_mapping
+      - student_area_mapping
+      - timing_context_mapping
+
+    outputs:
+      - local_intent_metadata
+      - geo_context_enrichment
+      - local_query_alignment
+
+  schema_engine:
+    description: >
+      Generate semantically consistent structured metadata.
+
+    features:
+      - restaurant_schema
+      - food_menu_schema
+      - faq_schema
+      - review_schema
+      - geo_schema
+      - opening_hours_schema
+      - combined_graph_schema
+
+    outputs:
+      - JSONLD
+      - schema_graph
+      - search_engine_metadata
+
+discoverability_scoring:
+
+  score_categories:
+    - menu_indexability
+    - dish_visibility
+    - ai_search_readiness
+    - conversational_readiness
+    - local_intent_alignment
+    - review_signal_quality
+    - schema_completeness
+
+  scoring_output:
+    overall_score:
+      scale: 0_to_100
+
+    detailed_scores:
+      - ai_visibility_score
+      - local_search_score
+      - menu_discoverability_score
+      - conversational_search_score
+      - dish_retrieval_score
+
+search_intelligence:
+
+  primary_query_patterns:
+    - dish_plus_location
+    - cuisine_plus_intent
+    - ambience_plus_audience
+    - budget_plus_location
+    - family_plus_food_type
+
+  example_queries:
+    - best biryani in Morrisville
+    - authentic Andhra food Raleigh
+    - vegetarian Indian buffet near RTP
+    - dosa restaurants in Cary
+    - family Indian restaurants near Raleigh
+    - Indian lunch near RTP offices
+
+data_model:
+
+  entities:
+    restaurant:
+      fields:
+        - canonical_id
+        - name
+        - aliases
+        - geo_location
+        - cuisine_types
+        - ambience_types
+        - audience_types
+        - discoverability_score
+
+    menu_section:
+      fields:
+        - section_name
+        - meal_type
+        - cuisine_category
+
+    dish:
+      fields:
+        - canonical_name
+        - aliases
+        - ingredients
+        - dietary_type
+        - spice_level
+        - cuisine_origin
+        - discoverability_keywords
+        - popularity_score
+
+    review_cluster:
+      fields:
+        - sentiment
+        - ambience
+        - dining_context
+        - audience_context
+        - emotional_signals
+
+    faq:
+      fields:
+        - intent_category
+        - conversational_query
+        - concise_answer
+        - voice_search_answer
+
+rag_readiness:
+
+  retrieval_strategy:
+    - restaurant_level_retrieval
+    - dish_level_retrieval
+    - faq_level_retrieval
+    - ambience_level_retrieval
+    - dining_intent_retrieval
+
+  chunking_strategy:
+    - restaurant_chunk
+    - menu_chunk
+    - dish_chunk
+    - review_chunk
+    - faq_chunk
+
+  future_vectorization:
+    embeddings:
+      - dishes
+      - reviews
+      - FAQs
+      - ambience_descriptors
+      - dining_intents
+      - restaurant_profiles
+
+technical_stack:
+
+  frontend:
+    framework:
+      - Next.js
+      - React
+      - TailwindCSS
+      - shadcn_ui
+
+  backend:
+    framework:
+      - Node.js
+      - Express.js
+
+  database:
+    primary:
+      - PostgreSQL
+
+    future:
+      - pgvector
+      - Redis
+
+  processing:
+    - Playwright
+    - OCR_pipeline
+    - PDF_parser
+    - AI_processing_pipeline
+
+  deployment:
+    - Docker
+    - Nginx
+    - Cloudflare
+
+engineering_rules:
+  mandatory:
+    - Every feature must improve discoverability
+    - Metadata-first architecture
+    - Retrieval-oriented design
+    - Semantic consistency enforcement
+    - Canonical entity normalization
+    - Human-reviewable enrichment outputs
+
+  prohibited:
+    - Generic AI blogging
+    - Keyword stuffing
+    - Thin content generation
+    - Generic dashboard bloat
+    - Unstructured metadata storage
+
+execution_plan:
+
+  phase_1:
+    duration: 2_weeks
+
+    objectives:
+      - restaurant_ingestion
+      - menu_parsing
+      - dish_extraction
+      - schema_generation
+
+  phase_2:
+    duration: 2_weeks
+
+    objectives:
+      - review_semantic_engine
+      - conversational_faq_generation
+      - local_intent_mapping
+      - discoverability_scoring
+
+  phase_3:
+    duration: 2_weeks
+
+    objectives:
+      - dish_discoverability_pages
+      - ai_search_snippets
+      - conversational_query_mapping
+      - geo_intent_alignment
+
+  phase_4:
+    duration: ongoing
+
+    objectives:
+      - semantic_refinement
+      - ontology_expansion
+      - discoverability_benchmarking
+      - AI_visibility_tracking
+
+success_criteria:
+
+  technical:
+    - accurate_menu_structuring
+    - stable_dish_normalization
+    - consistent_schema_generation
+    - high_quality_review_extraction
+
+  discoverability:
+    - improved_maps_visibility
+    - increased_dish_indexing
+    - conversational_query_presence
+    - AI_search_retrieval_appearance
+
+  business:
+    - first_10_restaurants
+    - recurring_revenue
+    - measurable_visibility_improvements
+    - repeatable_onboarding
+
+major_risks:
+  - overengineering_before_validation
+  - weak_restaurant_onboarding
+  - poor_entity_normalization
+  - low_quality_ai_enrichment
+  - insufficient_discoverability_tracking
+```
+

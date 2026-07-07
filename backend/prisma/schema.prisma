@@ -1,0 +1,152 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Restaurant {
+  id                        String             @id @default(uuid())
+  name                      String
+  address                   String
+  city                      String
+  state                     String?
+  postalCode                String?
+  latitude                  Float?
+  longitude                 Float?
+  phone                     String?
+  website                   String?
+  timings                   String?            // SQLite holds JSON as string
+  cuisineTypes              String             // Comma-separated or JSON string of cuisines
+  regionalCuisine           String?            // e.g. South Indian, Punjabi, Andhra, Telangana
+  priceRange                String?            // $, $$, $$$, $$$$
+  dietarySupport            String             // Comma-separated or JSON string of dietary support
+  amenities                 String             // Comma-separated or JSON string of amenities
+  ambience                  String             // Comma-separated or JSON string of ambience
+  parkingInfo               String?            // Valet, Street, Lot, etc.
+  nearbyLandmarks           String?            // JSON string containing list of geo landmarks/nearby areas
+  gbpHealthScore            Int                @default(70) // Mock Google Business Profile health score
+  deliverySupport           Boolean            @default(false)
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  // TIRDE Discoverability Scorecard Columns
+  discoverabilityScore       Int                @default(0)
+  aiVisibilityScore          Int                @default(0)
+  localSearchScore           Int                @default(0)
+  menuDiscoverabilityScore   Int                @default(0)
+  conversationalSearchScore  Int                @default(0)
+  dishRetrievalScore         Int                @default(0)
+  restaurantClarityScore     Int                @default(0)
+  retrievalValidationScore   Int                @default(0)
+  competitiveVisibilityScore Int                @default(0)
+  optimizationCompleteness   Int                @default(0)
+  retrievalConfidence        Int                @default(0)
+
+  // Relations
+  menuSections              MenuSection[]
+  menuItems                 MenuItem[]
+  reviewAnalyses            ReviewAnalysis[]
+  faqs                      FAQ[]
+  schemas                   SEOMarkup[]
+  vectorCaches              VectorCache[]
+}
+
+model MenuSection {
+  id           String     @id @default(uuid())
+  restaurantId String
+  name         String     // e.g., Appetizers, Main Course, Desserts
+  description  String?
+  order        Int        @default(0)
+
+  // Relations
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items        MenuItem[]
+
+  @@unique([restaurantId, name])
+}
+
+model MenuItem {
+  id              String      @id @default(uuid())
+  restaurantId    String
+  sectionId       String
+  name            String
+  description     String?
+  price           Float
+  currency        String      @default("USD")
+  ingredients     String      // Comma-separated or JSON string of ingredients
+  dietaryType     String      // Comma-separated or JSON string of dietary types
+  spiceLevel      String?     // Mild, Medium, Hot, Extra Hot
+  allergens       String      // Comma-separated or JSON string of allergens
+  mealType        String      // Comma-separated or JSON string of meal types
+  popularityScore Float       @default(0.0) // Calculated from reviews
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  restaurant      Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  section         MenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+}
+
+model ReviewAnalysis {
+  id              String     @id @default(uuid())
+  restaurantId    String
+  overallSentiment Float      // Value between -1.0 and 1.0
+  sentimentSummary String?    // AI summary of overall sentiment
+  popularDishes   String     // JSON string: Array of dishes with sentiment counts
+  ambienceTags    String     // Comma-separated or JSON string of ambience tags
+  serviceInsights String?    // Key takeaways about service quality
+  topicClusters   String     // JSON string: Topics grouped dynamically
+  complaints      String     // Comma-separated or JSON string of complaints
+  audienceProfile String     // JSON string: Demographics
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model FAQ {
+  id           String     @id @default(uuid())
+  restaurantId String
+  question     String
+  answer       String
+  category     String     // e.g. general, dietary, parking, accessibility, hours
+  voiceSnippet String?    // Short conversational summary for voice query matching
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model SEOMarkup {
+  id           String     @id @default(uuid())
+  restaurantId String
+  type         String     // "Restaurant", "Menu", "FAQ", "Combined"
+  jsonld       String     // JSON string of structured schema JSON
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, type])
+}
+
+model VectorCache {
+  id           String     @id @default(uuid())
+  restaurantId String
+  entityType   String     // "restaurant", "menuItem", "faq", "reviewTopic"
+  entityId     String     // References corresponding item's ID
+  textChunk    String     // Raw text representation vectorized
+  embedding    String     // JSON-serialized array of floats
+  createdAt    DateTime   @default(now())
+
+  // Relations
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, entityType])
+}
