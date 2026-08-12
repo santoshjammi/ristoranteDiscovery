@@ -11,6 +11,7 @@ backend/dist/
 frontend/.next/
 frontend/.next-prod/
 *.tsbuildinfo
+frontend/next-env.d.ts
 
 # Local runtime state
 backend/prisma/*.db
