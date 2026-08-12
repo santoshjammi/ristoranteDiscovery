@@ -32,5 +32,8 @@ e2e/playwright/.cache/
 *.log
 npm-debug.log*
 
+# Hermes verify tooling state
+.hermes/
+
 # OS
 .DS_Store
