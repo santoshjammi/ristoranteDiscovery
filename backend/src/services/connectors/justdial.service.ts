@@ -27,9 +27,9 @@ function generateJustDialData(): Record<string, any> {
       responseRate: 0.15,
     },
     scorecardFactors: [
-      { factorId: 'restaurant_clarity', score: 40, confidence: 0.7, evidence: ['Incomplete listing on JustDial'] },
+      { factorId: 'business_completeness', score: 40, confidence: 0.7, evidence: ['Incomplete listing on JustDial'] },
       { factorId: 'review_response', score: 15, confidence: 0.6, evidence: ['JustDial response rate: 15%'] },
-      { factorId: 'local_search_score', score: 35, confidence: 0.65, evidence: ['Limited JustDial presence'] },
+      { factorId: 'local_search', score: 35, confidence: 0.65, evidence: ['Limited JustDial presence'] },
     ],
   };
 }

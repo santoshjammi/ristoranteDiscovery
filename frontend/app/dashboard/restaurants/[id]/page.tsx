@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
-import { MasterScore, CategoryCard, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
+import { MasterScore, CategoryCard, statusColor, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -19,6 +19,7 @@ function ScorecardPage() {
   const [selectedFactor, setSelectedFactor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
 
   const fetchScorecard = async () => {
     if (!token || !params.id) return;
@@ -62,12 +63,21 @@ function ScorecardPage() {
 
   if (!scorecard) return null;
 
-  // Flatten all factors for search/filter
+  // Flatten all factors for search/filter/sort
   const allFactors = scorecard.categories.flatMap((c) => c.factors);
   const filteredFactors = allFactors.filter((f) => {
     if (searchQuery && !f.name.toLowerCase().includes(searchQuery.toLowerCase()) && !f.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (statusFilter !== "all" && f.status !== statusFilter) return false;
     return true;
+  }).sort((a, b) => {
+    if (sortBy === "score") return (b.score ?? -1) - (a.score ?? -1);
+    if (sortBy === "status") return a.status.localeCompare(b.status);
+    if (sortBy === "category") {
+      const ca = scorecard.categories.find((c) => c.factors.some((f) => f.id === a.id));
+      const cb = scorecard.categories.find((c) => c.factors.some((f) => f.id === b.id));
+      return (ca?.name ?? "").localeCompare(cb?.name ?? "");
+    }
+    return a.name.localeCompare(b.name);
   });
 
   const selectedFactorData = selectedFactor ? allFactors.find((f) => f.id === selectedFactor) : null;
@@ -110,6 +120,26 @@ function ScorecardPage() {
           <option value="critical">Critical</option>
           <option value="pending_observation">Pending Observation</option>
         </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          style={{
+            padding: `${spacing.sm} ${spacing.md}`, borderRadius: radius.md, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: "0.8125rem", cursor: "pointer",
+          }}
+        >
+          <option value="name">Sort: Name</option>
+          <option value="score">Sort: Score</option>
+          <option value="status">Sort: Status</option>
+          <option value="category">Sort: Category</option>
+        </select>
+      </div>
+
+      {/* Factor summary bar */}
+      <div style={{ marginBottom: spacing.xl }}>
+        <p style={{ ...typography.small, margin: 0, color: colors.mutedDarker }}>
+          Showing {filteredFactors.length} of {allFactors.length} factors
+          {sortBy === "category" ? " — sorted by category" : ""}
+        </p>
       </div>
 
       {/* Factor Detail Panel */}
@@ -148,6 +178,33 @@ function ScorecardPage() {
               <p style={{ ...typography.small, margin: 0, color: colors.mutedDarker, fontStyle: "italic" }}>
                 This factor requires {selectedFactorData.connectorRequired || "a data connector"} to be measured. It will become available once the connector is configured.
               </p>
+            </div>
+          )}
+
+          {/* Sub-signal evidence drill-down */}
+          {selectedFactorData.subSignals.length > 0 && (
+            <div style={{ marginTop: spacing.lg, padding: spacing.lg, background: colors.bg, borderRadius: radius.md }}>
+              <p style={{ ...typography.label, margin: `0 0 ${spacing.sm}`, color: colors.mutedDarker, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.6875rem", fontWeight: 600 }}>Supporting Sub-Signals</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}>
+                {selectedFactorData.subSignals.map((s) => (
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: spacing.md, background: colors.surface, borderRadius: radius.md, border: `1px solid ${colors.border}` }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: colors.text }}>{s.name}</p>
+                      {s.evidence.length > 0 && (
+                        <ul style={{ margin: `${spacing.xs} 0 0`, paddingLeft: spacing.lg, fontSize: "0.6875rem", color: colors.mutedDarker }}>
+                          {s.evidence.map((e, i) => <li key={i}>{e}</li>)}
+                        </ul>
+                      )}
+                      {s.evidence.length === 0 && (
+                        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker, fontStyle: "italic" }}>No supporting evidence yet — pending observation</p>
+                      )}
+                    </div>
+                    <span style={{ marginLeft: spacing.md, fontSize: "0.875rem", fontWeight: 700, color: s.score !== null ? statusColor(s.status) : colors.mutedDarker }}>
+                      {s.score !== null ? s.score : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -44,14 +44,14 @@ describe('ScorecardService', () => {
     mockConnectorFindMany.mockResolvedValue([]);
   });
 
-  it('should return a scorecard with 30 factors across 5 categories', async () => {
+  it('should return a scorecard with 25 factors across 5 categories', async () => {
     mockFindUnique.mockResolvedValue(mockRestaurant);
     const result = await getScorecard('test-123', 'fake-token');
     expect(result).toBeDefined();
     expect(result.restaurantId).toBe('test-123');
     expect(result.restaurantName).toBe('Test Restaurant');
     expect(result.categories).toHaveLength(5);
-    expect(result.totalFactors).toBe(30);
+    expect(result.totalFactors).toBe(25);
   });
 
   it('should compute liveFactors and pendingFactors correctly', async () => {
@@ -59,7 +59,7 @@ describe('ScorecardService', () => {
     const result = await getScorecard('test-123', 'fake-token');
     expect(result.liveFactors).toBeGreaterThan(0);
     expect(result.pendingFactors).toBeGreaterThan(0);
-    expect(result.liveFactors + result.pendingFactors).toBe(30);
+    expect(result.liveFactors + result.pendingFactors).toBe(25);
   });
 
   it('should throw error for non-existent restaurant', async () => {
@@ -78,11 +78,11 @@ describe('ScorecardService', () => {
     expect(categoryNames).toContain('Market Position');
   });
 
-  it('should have 6 factors in each category', async () => {
+  it('should have 5 factors in each category', async () => {
     mockFindUnique.mockResolvedValue(mockRestaurant);
     const result = await getScorecard('test-123', 'fake-token');
     for (const category of result.categories) {
-      expect(category.factors).toHaveLength(6);
+      expect(category.factors).toHaveLength(5);
     }
   });
 
@@ -140,5 +140,43 @@ describe('ScorecardService', () => {
     for (const f of liveFactors) {
       expect(f.confidence).not.toBeNull();
     }
+  });
+
+  it('should preserve merged v1.0 factors as sub-signals', async () => {
+    mockFindUnique.mockResolvedValue(mockRestaurant);
+    const result = await getScorecard('test-123', 'fake-token');
+    const allFactors = result.categories.flatMap(c => c.factors);
+    // review_volume_freshness should carry review_freshness as a sub-signal
+    const rvf = allFactors.find(f => f.id === 'review_volume_freshness');
+    expect(rvf).toBeDefined();
+    expect(rvf!.subSignals.some(s => s.id === 'review_freshness')).toBe(true);
+    // overall_trust should carry social_presence
+    const trust = allFactors.find(f => f.id === 'overall_trust');
+    expect(trust).toBeDefined();
+    expect(trust!.subSignals.some(s => s.id === 'social_presence')).toBe(true);
+  });
+
+  it('should keep AI Visibility pending without real evidence', async () => {
+    mockFindUnique.mockResolvedValue(mockRestaurant);
+    mockConnectorFindMany.mockResolvedValue([]);
+    const result = await getScorecard('test-123', 'fake-token');
+    const allFactors = result.categories.flatMap(c => c.factors);
+    const ai = allFactors.find(f => f.id === 'ai_visibility');
+    expect(ai).toBeDefined();
+    expect(ai!.score).toBeNull();
+    expect(ai!.status).toBe('pending_observation');
+  });
+
+  it('should surface a live AI Visibility score when connector evidence exists', async () => {
+    mockFindUnique.mockResolvedValue(mockRestaurant);
+    mockConnectorFindMany.mockResolvedValue([
+      { factorId: 'ai_visibility_score', score: 82, confidence: 0.85, evidence: JSON.stringify(['AI search snippet found']) },
+    ]);
+    const result = await getScorecard('test-123', 'fake-token');
+    const allFactors = result.categories.flatMap(c => c.factors);
+    const ai = allFactors.find(f => f.id === 'ai_visibility');
+    expect(ai).toBeDefined();
+    expect(ai!.score).toBe(82);
+    expect(ai!.status).toBe('excellent');
   });
 });

@@ -27,10 +27,10 @@ function generateZomatoData(): Record<string, any> {
     onlineOrdering: false,
     tableReservation: true,
     scorecardFactors: [
-      { factorId: 'review_freshness', score: Math.max(0, 100 - 5 * 3), confidence: 0.8, evidence: ['Last review: 5 days ago on Zomato'] },
+      { factorId: 'review_volume_freshness', score: Math.max(0, 100 - 5 * 3), confidence: 0.8, evidence: ['Last review: 5 days ago on Zomato'] },
       { factorId: 'review_response', score: 30, confidence: 0.75, evidence: ['Zomato response rate: 30%'] },
       { factorId: 'sentiment', score: Math.round((0.65 + 1) * 50), confidence: 0.85, evidence: ['Zomato sentiment: 0.65'] },
-      { factorId: 'menu_publishing', score: 70, confidence: 0.8, evidence: ['Menu published on Zomato'] },
+      { factorId: 'menu_availability_quality', score: 70, confidence: 0.8, evidence: ['Menu published on Zomato'] },
       { factorId: 'delivery_platforms', score: 30, confidence: 0.7, evidence: ['Online ordering: No'] },
     ],
   };

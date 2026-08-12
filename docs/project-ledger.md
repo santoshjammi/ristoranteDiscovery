@@ -15,6 +15,7 @@
 | Navigation IA (sidebar, routes, breadcrumbs) | ✅ Frozen | 9 nav links, Cmd+K search, notification bell |
 | `useList` hook (search, sort, filter, pagination) | ✅ Frozen | Reusable across all list pages |
 | Scorecard Model (30 factors, 5 categories) | ✅ Frozen | `backend/src/domain/scorecard/types.ts` — 30 FactorDefinitions |
+| Scorecard Model v2.0 (25 factors, 5 categories) | ✅ Frozen | `types.ts` — 25 customer-facing factors, merged v1.0 factors preserved as sub-signals/evidence |
 | Scorecard Service (Prisma direct, no offsets) | ✅ Frozen | `backend/src/domain/scorecard/ScorecardService.ts` |
 | API: `GET /api/restaurants/:id/scorecard` | ✅ Live | Returns full scorecard with categories, factors, status |
 | API: `DELETE /api/restaurants/:id` | ✅ Live | Hard delete |
@@ -63,9 +64,9 @@
 | `intelligence-comprehensive.spec.ts` | 20 | ~200 | ✅ All pass |
 | `misc-pages.spec.ts` | 25 | ~250 | ✅ All pass |
 | `auth-public.spec.ts` | 29 | ~290 | ✅ All pass |
-| `ScorecardService.test.ts` (unit) | 10 | ~100 | ✅ All pass |
+| `ScorecardService.test.ts` (unit) | 13 | ~130 | ✅ All pass |
 | `api.integration.test.ts` (integration) | 1 | ~29 | ✅ All pass |
-| **Total** | **156** | **~1,600** | **✅ 156/156 pass** |
+| **Total** | **159** | **~1,630** | **✅ 159/159 pass** |
 
 ---
 
@@ -106,9 +107,9 @@
 | Pages | 27 |
 | API Routes | ~30 |
 | E2E Tests | 145 (all passing) |
-| Unit Tests | 10 (all passing) |
+| Unit Tests | 13 (all passing) |
 | Integration Tests | 1 (all passing) |
-| Total Assertions | ~1,600 |
+| Total Assertions | ~1,630 |
 | Target | 2,500+ |
 | Backend Status | ✅ Healthy (port 8040) |
 | Frontend Status | ✅ Healthy (port 3000) |

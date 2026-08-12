@@ -1,5 +1,8 @@
 import prisma from '../../config/db';
-import { FACTORS, CATEGORIES, type FactorScore, type CategoryScore, type Scorecard, type FactorStatus } from './types';
+import {
+  FACTORS, CATEGORIES, SUBSIGNAL_SOURCE_MAP,
+  type FactorScore, type CategoryScore, type Scorecard, type FactorStatus, type SubSignal,
+} from './types';
 
 function computeStatus(score: number | null): FactorStatus {
   if (score === null) return 'pending_observation';
@@ -17,86 +20,177 @@ function computeOverallStatus(scores: (number | null)[]): FactorStatus {
   return computeStatus(avg);
 }
 
+interface SignalScore {
+  score: number | null;
+  trend: 'up' | 'down' | 'stable' | null;
+  confidence: number | null;
+  evidence: string[];
+}
+
+/**
+ * Resolve a single source signal's score.
+ * Connector data takes priority; DB fallback provides hardcoded mappings for
+ * signals not yet fed by a connector. `requiresEvidence` signals never use the
+ * DB fallback — they stay pending until a connector/evidence source provides a score.
+ */
+function resolveSignalScore(
+  signalId: string,
+  connectorMap: Map<string, { score: number; confidence: number | null; evidence: string[] }>,
+  r: any,
+  requiresEvidence: boolean,
+): SignalScore {
+  const cd = connectorMap.get(signalId);
+  if (cd) {
+    return {
+      score: cd.score,
+      trend: 'stable',
+      confidence: cd.confidence ?? null,
+      evidence: cd.evidence,
+    };
+  }
+
+  // No connector data — use DB fallback unless the factor requires evidence.
+  if (requiresEvidence) {
+    return { score: null, trend: null, confidence: null, evidence: [] };
+  }
+
+  switch (signalId) {
+    case 'gbp_profile':           return { score: r.gbpHealthScore, trend: 'stable', confidence: 85, evidence: ['GBP profile completeness'] };
+    case 'maps_presence':         return { score: r.localSearchScore, trend: 'up', confidence: 80, evidence: ['Google Maps presence'] };
+    case 'local_search':
+    case 'local_search_score':    return { score: r.localSearchScore, trend: 'up', confidence: 88, evidence: ['Local search ranking'] };
+    case 'business_categories':   return { score: r.cuisineTypes ? 65 : null, trend: 'stable', confidence: 75, evidence: r.cuisineTypes ? ['Business categories set'] : [] };
+    case 'location_accuracy':     return { score: r.address ? 70 : null, trend: 'stable', confidence: 90, evidence: r.address ? ['Location verified'] : [] };
+    case 'delivery_platforms':    return { score: null, trend: null, confidence: null, evidence: [] };
+
+    case 'avg_rating':            return { score: r.gbpHealthScore, trend: 'stable', confidence: 70, evidence: [] };
+    case 'review_volume':         return { score: r.gbpHealthScore, trend: 'up', confidence: 65, evidence: [] };
+    case 'review_freshness':      return { score: null, trend: null, confidence: null, evidence: [] };
+    case 'review_response':       return { score: null, trend: null, confidence: null, evidence: [] };
+    case 'sentiment':             return { score: null, trend: null, confidence: null, evidence: [] };
+    case 'social_presence':       return { score: null, trend: null, confidence: null, evidence: [] };
+    case 'business_trust':        return { score: r.gbpHealthScore, trend: 'up', confidence: 72, evidence: ['Trust signals present'] };
+
+    case 'website_health':
+    case 'website_performance':   return { score: r.aiVisibilityScore, trend: 'up', confidence: 82, evidence: ['Website health checks'] };
+    case 'mobile_experience':     return { score: r.aiVisibilityScore, trend: 'stable', confidence: 78, evidence: ['Mobile experience'] };
+    case 'menu_availability':
+    case 'menu_quality':
+    case 'menu_publishing':       return { score: r.menuDiscoverabilityScore, trend: 'up', confidence: 85, evidence: ['Menu availability'] };
+    case 'online_ordering':       return { score: r.conversationalSearchScore, trend: 'stable', confidence: 70, evidence: ['Online ordering'] };
+    case 'reservations':          return { score: null, trend: null, confidence: null, evidence: [] };
+
+    case 'business_completeness':
+    case 'restaurant_clarity':    return { score: r.restaurantClarityScore, trend: 'up', confidence: 92, evidence: ['Business completeness'] };
+    case 'opening_hours':         return { score: r.restaurantClarityScore, trend: 'stable', confidence: 95, evidence: ['Opening hours verified'] };
+    case 'contact_info':          return { score: (r.phone || r.website) ? 75 : null, trend: 'stable', confidence: 90, evidence: r.phone ? ['Phone on file'] : (r.website ? ['Website on file'] : []) };
+    case 'photos_media':          return { score: r.menuDiscoverabilityScore, trend: 'stable', confidence: 60, evidence: [] };
+    case 'local_citations':       return { score: null, trend: null, confidence: null, evidence: [] };
+
+    case 'competitive_position':  return { score: r.discoverabilityScore, trend: 'up', confidence: 75, evidence: ['Competitive benchmark'] };
+    case 'local_authority':       return { score: r.localSearchScore, trend: 'stable', confidence: 70, evidence: ['Local authority signals'] };
+    case 'visibility_trend':      return { score: r.discoverabilityScore, trend: 'up', confidence: 85, evidence: ['Visibility trend'] };
+    case 'growth_opportunity':    return { score: r.discoverabilityScore, trend: 'up', confidence: 65, evidence: ['Growth opportunity analysis'] };
+    case 'customer_engagement':   return { score: null, trend: null, confidence: null, evidence: [] };
+
+    default:                      return { score: null, trend: null, confidence: null, evidence: [] };
+  }
+}
+
 export async function getScorecard(restaurantId: string, _token: string): Promise<Scorecard> {
   const r = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
   if (!r) throw new Error('Restaurant not found');
 
-  // Fetch connector-sourced scorecard data for this restaurant
+  // Fetch connector-sourced scorecard data for this restaurant.
   const connectorData = await prisma.connectorScorecardData.findMany({
     where: { restaurantId },
   });
-  const connectorMap = new Map(connectorData.map(cd => [cd.factorId, cd]));
+  const connectorMap = new Map(
+    connectorData.map(cd => [
+      cd.factorId,
+      {
+        score: cd.score,
+        confidence: cd.confidence,
+        evidence: JSON.parse(cd.evidence || '[]') as string[],
+      },
+    ]),
+  );
 
-  // Build factor scores — use raw DB scores directly, no offsets
+  // Build the 25 factor scores, each with its sub-signals.
   const factorScores: FactorScore[] = FACTORS.map((def) => {
-    let score: number | null = null;
-    let trend: 'up' | 'down' | 'stable' | null = null;
-    let confidence: number | null = null;
-    let evidenceCount = 0;
+    const requiresEvidence = !!def.requiresEvidence;
 
-    // Check if connector data exists for this factor
-    const cd = connectorMap.get(def.id);
-    if (cd) {
-      score = cd.score;
-      confidence = cd.confidence;
-      evidenceCount = JSON.parse(cd.evidence || '[]').length;
+    // Source signal ids: the factor's own id + its sub-signal source ids.
+    const sourceIds = Array.from(new Set([def.id, ...def.subSignals.map(s => s.id)]));
+
+    // Compute sub-signals (merged v1.0 factors preserved as evidence).
+    const subSignals: SubSignal[] = def.subSignals.map((ss) => {
+      const src = resolveSignalScore(ss.id, connectorMap, r, requiresEvidence);
+      return {
+        id: ss.id,
+        name: ss.name,
+        score: src.score,
+        status: computeStatus(src.score),
+        evidence: src.evidence,
+      };
+    });
+
+    // Direct source for the factor's own id (e.g. sentiment, delivery_platforms).
+    const own = resolveSignalScore(def.id, connectorMap, r, requiresEvidence);
+
+    // Sub-signal scores that are live.
+    const liveSubScores = subSignals
+      .map(s => s.score)
+      .filter((s): s is number => s !== null);
+
+    let score: number | null;
+    let trend: 'up' | 'down' | 'stable' | null;
+    let confidence: number | null;
+    let evidence: string[];
+
+    if (own.score !== null) {
+      // Factor has a direct score (connector or DB fallback).
+      score = own.score;
+      trend = own.trend;
+      confidence = own.confidence;
+      evidence = own.evidence;
+    } else if (liveSubScores.length > 0) {
+      // Composite factor — average its live sub-signals.
+      score = Math.round(liveSubScores.reduce((a, b) => a + b, 0) / liveSubScores.length);
       trend = 'stable';
+      confidence = 70;
+      evidence = subSignals.flatMap(s => s.evidence);
+    } else {
+      score = null;
+      trend = null;
+      confidence = null;
+      evidence = [];
     }
 
-    // Fall back to hardcoded DB mappings for non-connector factors
-    if (score === null) {
-      switch (def.id) {
-        case 'gbp_profile':           score = r.gbpHealthScore; trend = 'stable'; confidence = 85; evidenceCount = 3; break;
-        case 'maps_presence':         score = r.localSearchScore; trend = 'up'; confidence = 80; evidenceCount = 5; break;
-        case 'local_search':          score = r.localSearchScore; trend = 'up'; confidence = 88; evidenceCount = 12; break;
-        case 'business_categories':   score = r.cuisineTypes ? 65 : null; trend = 'stable'; confidence = 75; evidenceCount = 2; break;
-        case 'location_accuracy':     score = r.address ? 70 : null; trend = 'stable'; confidence = 90; evidenceCount = 1; break;
-        case 'delivery_platforms':    score = null; trend = null; confidence = null; evidenceCount = 0; break;
-
-        case 'avg_rating':            score = r.gbpHealthScore; trend = 'stable'; confidence = 70; evidenceCount = 0; break;
-        case 'review_volume':         score = r.gbpHealthScore; trend = 'up'; confidence = 65; evidenceCount = 0; break;
-        case 'review_freshness':      score = null; trend = null; confidence = null; evidenceCount = 0; break;
-        case 'review_response':       score = null; trend = null; confidence = null; evidenceCount = 0; break;
-        case 'sentiment':             score = null; trend = null; confidence = null; evidenceCount = 0; break;
-        case 'social_presence':       score = null; trend = null; confidence = null; evidenceCount = 0; break;
-
-        case 'website_health':        score = r.aiVisibilityScore; trend = 'up'; confidence = 82; evidenceCount = 7; break;
-        case 'mobile_experience':     score = r.aiVisibilityScore; trend = 'stable'; confidence = 78; evidenceCount = 3; break;
-        case 'menu_availability':     score = r.menuDiscoverabilityScore; trend = 'up'; confidence = 85; evidenceCount = 4; break;
-        case 'online_ordering':       score = r.conversationalSearchScore; trend = 'stable'; confidence = 70; evidenceCount = 2; break;
-        case 'website_performance':   score = r.aiVisibilityScore; trend = 'down'; confidence = 75; evidenceCount = 5; break;
-        case 'reservations':          score = null; trend = null; confidence = null; evidenceCount = 0; break;
-
-        case 'business_completeness': score = r.restaurantClarityScore; trend = 'up'; confidence = 92; evidenceCount = 6; break;
-        case 'opening_hours':         score = r.restaurantClarityScore; trend = 'stable'; confidence = 95; evidenceCount = 1; break;
-        case 'contact_info':          score = (r.phone || r.website) ? 75 : null; trend = 'stable'; confidence = 90; evidenceCount = (r.phone ? 1 : 0) + (r.website ? 1 : 0); break;
-        case 'photos_media':          score = r.menuDiscoverabilityScore; trend = 'stable'; confidence = 60; evidenceCount = 0; break;
-        case 'menu_quality':          score = r.menuDiscoverabilityScore; trend = 'up'; confidence = 80; evidenceCount = 3; break;
-        case 'local_citations':       score = null; trend = null; confidence = null; evidenceCount = 0; break;
-
-        case 'competitive_position':  score = r.discoverabilityScore; trend = 'up'; confidence = 75; evidenceCount = 8; break;
-        case 'local_authority':       score = r.localSearchScore; trend = 'stable'; confidence = 70; evidenceCount = 4; break;
-        case 'visibility_trend':      score = r.discoverabilityScore; trend = 'up'; confidence = 85; evidenceCount = 10; break;
-        case 'business_trust':        score = r.gbpHealthScore; trend = 'up'; confidence = 72; evidenceCount = 3; break;
-        case 'growth_opportunity':    score = r.discoverabilityScore; trend = 'up'; confidence = 65; evidenceCount = 5; break;
-        case 'customer_engagement':  score = null; trend = null; confidence = null; evidenceCount = 0; break;
-
-        default: score = null; trend = null; confidence = null; evidenceCount = 0;
-      }
+    // For requiresEvidence factors (e.g. AI Visibility), never surface a score
+    // unless real connector evidence exists.
+    const hasConnectorEvidence = def.requiresEvidence && sourceIds.some(id => connectorMap.has(id));
+    if (requiresEvidence && !hasConnectorEvidence) {
+      score = null;
+      trend = null;
+      confidence = null;
+      evidence = [];
     }
 
     return {
       id: def.id, name: def.name, description: def.description,
       score, status: computeStatus(score), trend, confidence,
       lastUpdated: score !== null ? new Date().toISOString() : null,
-      businessImpact: def.businessImpact, evidenceCount,
+      businessImpact: def.businessImpact,
+      evidenceCount: evidence.length,
+      subSignals,
       connectorRequired: def.connectorRequired,
       recommendedActions: def.recommendedActions,
       expectedImprovement: def.expectedImprovement,
     };
   });
 
-  // Build categories
+  // Build categories.
   const categories: CategoryScore[] = CATEGORIES.map((cat) => {
     const factors = factorScores.filter((f) => FACTORS.find((d) => d.id === f.id)?.categoryId === cat.id);
     const scores = factors.map((f) => f.score).filter((s): s is number => s !== null);
@@ -112,8 +206,9 @@ export async function getScorecard(restaurantId: string, _token: string): Promis
   });
 
   const allScores = factorScores.map((f) => f.score);
-  const overallScore = allScores.some((s) => s !== null)
-    ? Math.round(allScores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) / allScores.filter((s): s is number => s !== null).length)
+  const liveScores = allScores.filter((s): s is number => s !== null);
+  const overallScore = liveScores.length > 0
+    ? Math.round(liveScores.reduce((a, b) => a + b, 0) / liveScores.length)
     : null;
 
   return {
@@ -125,3 +220,6 @@ export async function getScorecard(restaurantId: string, _token: string): Promis
     lastUpdated: new Date().toISOString(),
   };
 }
+
+// Re-export the sub-signal source map for any consumers that need it.
+export { SUBSIGNAL_SOURCE_MAP };

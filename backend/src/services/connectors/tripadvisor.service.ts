@@ -26,7 +26,7 @@ function generateTripAdvisorData(): Record<string, any> {
     travelogenious: false,
     travelerType: { couples: 35, families: 28, solo: 22, business: 15 },
     scorecardFactors: [
-      { factorId: 'review_freshness', score: Math.max(0, 100 - 7 * 3), confidence: 0.8, evidence: ['Last TripAdvisor review: 7 days ago'] },
+      { factorId: 'review_volume_freshness', score: Math.max(0, 100 - 7 * 3), confidence: 0.8, evidence: ['Last TripAdvisor review: 7 days ago'] },
       { factorId: 'sentiment', score: Math.round((0.60 + 1) * 50), confidence: 0.85, evidence: ['TripAdvisor sentiment: 0.60'] },
       { factorId: 'review_response', score: 25, confidence: 0.7, evidence: ['TripAdvisor response rate: 25%'] },
       { factorId: 'social_presence', score: 30, confidence: 0.65, evidence: ['TripAdvisor listing active, no Travel + Genious badge'] },

@@ -35,7 +35,7 @@ function generateGBPData(): Record<string, any> {
       hasOnlineOrdering: false,
     },
     scorecardFactors: [
-      { factorId: 'review_freshness', score: Math.max(0, 100 - 3 * 3), confidence: 0.85, evidence: ['Last review: 3 days ago'] },
+      { factorId: 'review_volume_freshness', score: Math.max(0, 100 - 3 * 3), confidence: 0.85, evidence: ['Last review: 3 days ago'] },
       { factorId: 'review_response', score: 42, confidence: 0.75, evidence: ['Response rate: 42%'] },
       { factorId: 'sentiment', score: Math.round((0.68 + 1) * 50), confidence: 0.85, evidence: ['Sentiment score: 0.68'] },
       { factorId: 'social_presence', score: 20, confidence: 0.6, evidence: ['No social links found'] },

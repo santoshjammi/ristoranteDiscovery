@@ -4,12 +4,21 @@ import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 
 export type FactorStatus = 'excellent' | 'good' | 'fair' | 'needs_attention' | 'critical' | 'pending_observation';
 
+export interface SubSignal {
+  id: string;
+  name: string;
+  score: number | null;
+  status: FactorStatus;
+  evidence: string[];
+}
+
 export interface FactorScore {
   id: string; name: string; description: string;
   score: number | null; status: FactorStatus;
   trend: 'up' | 'down' | 'stable' | null;
   confidence: number | null; lastUpdated: string | null;
   businessImpact: string; evidenceCount: number;
+  subSignals: SubSignal[];
   connectorRequired?: string;
   recommendedActions: string[]; expectedImprovement: string;
 }
@@ -39,6 +48,8 @@ function statusColor(status: FactorStatus): string {
     case 'pending_observation': return colors.mutedDarker;
   }
 }
+
+export { statusColor };
 
 function statusBg(status: FactorStatus): string {
   switch (status) {

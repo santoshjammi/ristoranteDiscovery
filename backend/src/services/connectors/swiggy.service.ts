@@ -25,8 +25,8 @@ function generateSwiggyData(): Record<string, any> {
     },
     scorecardFactors: [
       { factorId: 'delivery_platforms', score: 65, confidence: 0.85, evidence: ['Swiggy delivery active', 'Avg rating: 3.9'] },
-      { factorId: 'menu_publishing', score: 50, confidence: 0.75, evidence: ['Limited menu items on Swiggy'] },
-      { factorId: 'review_freshness', score: Math.max(0, 100 - 4 * 3), confidence: 0.8, evidence: ['Recent order: 4 days ago'] },
+      { factorId: 'menu_availability_quality', score: 50, confidence: 0.75, evidence: ['Limited menu items on Swiggy'] },
+      { factorId: 'review_volume_freshness', score: Math.max(0, 100 - 4 * 3), confidence: 0.8, evidence: ['Recent order: 4 days ago'] },
     ],
   };
 }

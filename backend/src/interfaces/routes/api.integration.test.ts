@@ -174,7 +174,7 @@ describe('API Integration', () => {
     expect(res.body.data).toBeDefined();
     expect(res.body.data.restaurantId).toBe(restaurantId);
     expect(res.body.data.categories).toHaveLength(5);
-    expect(res.body.data.totalFactors).toBe(30);
+    expect(res.body.data.totalFactors).toBe(25);
 
     // ── Restaurants: disable toggle ──
     res = await request(app)

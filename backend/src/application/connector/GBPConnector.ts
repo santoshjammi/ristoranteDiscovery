@@ -108,11 +108,11 @@ const GBPConnector: Connector = {
       ],
     });
 
-    // review_freshness — based on days since last review
+    // review_volume_freshness — based on days since last review (freshness)
     const daysSince = reviews.daysSinceLastReview || 30;
     const freshnessScore = Math.max(0, 100 - daysSince * 3);
     updates.push({
-      factorId: 'review_freshness',
+      factorId: 'review_volume_freshness',
       score: freshnessScore,
       confidence: 0.8,
       evidence: [
@@ -147,7 +147,7 @@ const GBPConnector: Connector = {
       ],
     });
 
-    // social_presence — based on social media activity
+    // overall_trust — based on social media activity (social_presence sub-signal)
     const socialScore = social.hasSocialLinks ? 60 : (social.postFrequency === 'weekly' ? 40 : 20);
     updates.push({
       factorId: 'social_presence',
