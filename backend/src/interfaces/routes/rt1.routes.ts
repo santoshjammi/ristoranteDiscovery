@@ -11,6 +11,7 @@ import { NotesService } from '../../application/notes/NotesService';
 import { WeeklySummaryService } from '../../application/summary/WeeklySummaryService';
 import { NotificationService } from '../../application/notifications/NotificationService';
 import { authMiddleware } from '../middleware/auth';
+import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
 
 const prisma = new PrismaClient();
 const analysis = new AnalysisService(prisma);
@@ -80,6 +81,8 @@ router.post('/restaurants/:id/analyze', authMiddleware, async (req: Request, res
   const a = await analysis.start(req.params.id);
   await analysis.complete(a.id);
   await events.track('analysis_completed', { restaurantId: req.params.id, userId: (req as any).userId });
+  // Capture a snapshot on analysis completion — a meaningful score change point.
+  await captureSnapshot(req.params.id);
   res.json({ data: { id: a.id, status: 'completed' } });
 });
 router.get('/restaurants/:id/analyses', authMiddleware, async (req: Request, res: Response) => {

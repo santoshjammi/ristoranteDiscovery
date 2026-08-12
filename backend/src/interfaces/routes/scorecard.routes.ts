@@ -11,8 +11,8 @@ router.get('/restaurants/:id/scorecard', async (req: Request, res: Response) => 
     if (!authHeader) return res.status(401).json({ error: 'No authorization token' });
     const token = authHeader.replace('Bearer ', '');
     const scorecard = await getScorecard(req.params.id, token);
-    // Capture a snapshot so history accumulates on every read.
-    await captureSnapshot(req.params.id);
+    // NOTE: read-only — no snapshot capture here. Snapshots are captured at
+    // meaningful mutation points (analysis completion, score recalc, source change).
     res.json({ data: scorecard });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -2,6 +2,7 @@
 // Manages connector registration, health checks, data fetching, and scorecard integration.
 
 import { PrismaClient } from '@prisma/client';
+import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
 
 export interface ConnectorConfig {
   id: string;
@@ -154,6 +155,8 @@ export class ConnectorService {
           },
         });
       }
+      // Capture a snapshot after source-data change (connector sync).
+      await captureSnapshot(restaurantId);
     }
 
     return result;

@@ -2,36 +2,17 @@
 
 import { AuthProvider, useAuth } from "@/app/lib/auth-context";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { colors, spacing, radius, typography, scoreColor, scoreLabel } from "@/lib/design-tokens";
+import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useList } from "@/lib/useList";
 import { SearchBar, SortButton, FilterDropdown, Pagination, ActiveFilters } from "@/components/shared/ListControls";
+import { PortfolioCard, PortfolioSummaryBar, type Portfolio, type PortfolioRestaurant } from "@/components/scorecard/PortfolioCard";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
-interface Restaurant {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  cuisineTypes: string[];
-  priceRange: string | null;
-  discoverabilityScore: number;
-  gbpHealthScore: number;
-  aiVisibilityScore: number;
-  localSearchScore: number;
-  menuDiscoverabilityScore: number;
-  conversationalSearchScore: number;
-  dishRetrievalScore: number;
-  restaurantClarityScore: number;
-  disabled?: boolean;
-  createdAt: string;
-}
-
 function RestaurantList() {
   const { token, organization } = useAuth();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -43,17 +24,16 @@ function RestaurantList() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const fetchRestaurants = async () => {
+  const fetchPortfolio = async () => {
     if (!token) return;
     setError("");
     try {
-      const res = await fetch(`${API}/api/restaurants`, {
+      const res = await fetch(`${API}/api/portfolio`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Failed to load (${res.status})`);
       const data = await res.json();
-      const list = Array.isArray(data) ? data : data.data || data.restaurants || [];
-      setRestaurants(list);
+      setPortfolio(data.data);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -61,12 +41,14 @@ function RestaurantList() {
     }
   };
 
-  useEffect(() => { fetchRestaurants(); }, [token]);
+  useEffect(() => { fetchPortfolio(); }, [token]);
+
+  const restaurants: PortfolioRestaurant[] = portfolio?.restaurants || [];
 
   const list = useList({
     items: restaurants,
     searchFields: ["name", "city", "cuisineTypes"],
-    defaultSort: { key: "name", direction: "asc" },
+    defaultSort: { key: "overallScore", direction: "desc" },
     pageSize: 10,
   });
 
@@ -92,7 +74,7 @@ function RestaurantList() {
       }
       setShowForm(false);
       setName(""); setAddress(""); setCity(""); setCuisineTypes("");
-      fetchRestaurants();
+      fetchPortfolio();
     } catch (err: any) { setFormError(err.message); }
     finally { setSubmitting(false); }
   };
@@ -105,16 +87,16 @@ function RestaurantList() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchRestaurants();
+      fetchPortfolio();
     } catch {} finally { setDeleting(null); }
   };
 
   // ── Loading ──
   if (loading) {
     return (
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <LoadingSkeleton count={1} height="1.5rem" width="30%" />
-        <div style={{ marginTop: spacing.xl }}><LoadingSkeleton count={5} height="4rem" width="100%" /></div>
+        <div style={{ marginTop: spacing.xl }}><LoadingSkeleton count={6} height="8rem" width="100%" /></div>
       </div>
     );
   }
@@ -122,34 +104,33 @@ function RestaurantList() {
   // ── Error ──
   if (error) {
     return (
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ padding: spacing["3xl"], textAlign: "center", background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.dangerLight}` }}>
-          <p style={{ fontSize: "1rem", color: colors.danger, margin: `0 0 ${spacing.sm}` }}>Failed to load restaurants</p>
+          <p style={{ fontSize: "1rem", color: colors.danger, margin: `0 0 ${spacing.sm}` }}>Failed to load portfolio</p>
           <p style={{ ...typography.small, margin: `0 0 ${spacing.lg}` }}>{error}</p>
-          <button onClick={fetchRestaurants} style={{ padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.sm, border: `1px solid ${colors.border}`, background: "transparent", color: colors.text, cursor: "pointer", fontSize: "0.8125rem" }}>Retry</button>
+          <button onClick={fetchPortfolio} style={{ padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.sm, border: `1px solid ${colors.border}`, background: "transparent", color: colors.text, cursor: "pointer", fontSize: "0.8125rem" }}>Retry</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
         <div>
-          <h1 style={{ ...typography.h1, margin: 0 }}>Restaurants</h1>
+          <h1 style={{ ...typography.h1, margin: 0 }}>Restaurant Portfolio</h1>
           <p style={{ ...typography.small, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>
-            {restaurants.length} total · {restaurants.filter((r) => {
-              const s = [r.discoverabilityScore, r.aiVisibilityScore, r.localSearchScore, r.menuDiscoverabilityScore, r.conversationalSearchScore, r.dishRetrievalScore, r.restaurantClarityScore, r.gbpHealthScore].filter((x): x is number => x != null);
-              const avg = s.length > 0 ? Math.round(s.reduce((a, b) => a + b, 0) / s.length) : 0;
-              return avg < 50;
-            }).length} need attention
+            {restaurants.length} locations · understand your entire portfolio at a glance
           </p>
         </div>
         <button onClick={() => setShowForm(!showForm)} style={{ padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.md, border: "none", background: showForm ? colors.muted : colors.primary, color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
           {showForm ? "Cancel" : "+ Add Restaurant"}
         </button>
       </div>
+
+      {/* Portfolio summary bar */}
+      {portfolio && <PortfolioSummaryBar summary={portfolio.summary} />}
 
       {/* Add Form */}
       {showForm && (
@@ -171,10 +152,10 @@ function RestaurantList() {
       {/* Search + Sort + Filter Bar */}
       <div style={{ display: "flex", gap: spacing.md, alignItems: "center", marginBottom: spacing.md, flexWrap: "wrap" }}>
         <SearchBar value={list.search} onChange={list.setSearch} placeholder="Search restaurants..." />
+        <SortButton label="Score" sortKey="overallScore" current={list.sort} onToggle={list.toggleSort} />
         <SortButton label="Name" sortKey="name" current={list.sort} onToggle={list.toggleSort} />
-        <SortButton label="Score" sortKey="discoverabilityScore" current={list.sort} onToggle={list.toggleSort} />
         <SortButton label="City" sortKey="city" current={list.sort} onToggle={list.toggleSort} />
-        <FilterDropdown label="Score" filterKey="status" options={[{ value: "good", label: "Good (70+)" }, { value: "needs-work", label: "Needs Work (40-69)" }, { value: "critical", label: "Critical (<40)" }]} current={list.filters} onSet={list.setFilterValue} onClear={list.removeFilter} />
+        <FilterDropdown label="Status" filterKey="overallStatus" options={[{ value: "excellent", label: "Excellent" }, { value: "good", label: "Good" }, { value: "fair", label: "Fair" }, { value: "needs_attention", label: "Needs Attention" }, { value: "critical", label: "Critical" }]} current={list.filters} onSet={list.setFilterValue} onClear={list.removeFilter} />
       </div>
 
       {/* Active Filters */}
@@ -201,53 +182,34 @@ function RestaurantList() {
             Showing {list.paged.length} of {list.totalCount}
           </p>
 
-          {/* Cards */}
+          {/* Portfolio cards */}
           <div style={{ display: "flex", flexDirection: "column", gap: spacing.md }}>
-            {list.paged.map((r) => {
-              // Composite score: average of 8 DB score columns (matches scorecard logic)
-              const rawScores = [r.discoverabilityScore, r.aiVisibilityScore, r.localSearchScore, r.menuDiscoverabilityScore, r.conversationalSearchScore, r.dishRetrievalScore, r.restaurantClarityScore, r.gbpHealthScore].filter((s): s is number => s != null);
-              const overallScore = rawScores.length > 0 ? Math.round(rawScores.reduce((a, b) => a + b, 0) / rawScores.length) : 0;
-              const isDisabled = r.disabled || false;
-              return (
-                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: spacing.md, padding: spacing.xl, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${isDisabled ? colors.dangerLight : colors.border}`, opacity: isDisabled ? 0.6 : 1 }}>
-                  <Link href={`/dashboard/restaurants/${r.id}`} style={{ flex: 1, textDecoration: "none" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, marginBottom: spacing.xs }}>
-                          <p style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: colors.text }}>{r.name}</p>
-                          {isDisabled && <span style={{ padding: `${spacing.xs} ${spacing.md}`, borderRadius: radius.full, fontSize: "0.6875rem", fontWeight: 600, background: colors.dangerLight, color: colors.danger }}>Disabled</span>}
-                          <span style={{ padding: `${spacing.xs} ${spacing.md}`, borderRadius: radius.full, fontSize: "0.6875rem", fontWeight: 600, background: `${scoreColor(overallScore)}20`, color: scoreColor(overallScore) }}>
-                            {scoreLabel(overallScore)}
-                          </span>
-                        </div>
-                        <p style={{ margin: 0, fontSize: "0.8125rem", color: colors.mutedDarker }}>
-                          {r.city}{r.cuisineTypes ? ` · ${Array.isArray(r.cuisineTypes) ? r.cuisineTypes.join(", ") : r.cuisineTypes}` : ""}
-                        </p>
-                      </div>
-                      <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: scoreColor(overallScore) }}>{overallScore}</p>
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => deleteRestaurant(r.id)}
-                    disabled={deleting === r.id}
-                    style={{
-                      padding: `${spacing.xs} ${spacing.md}`,
-                      borderRadius: radius.sm,
-                      border: `1px solid ${colors.danger}40`,
-                      background: "transparent",
-                      color: colors.danger,
-                      cursor: deleting === r.id ? "not-allowed" : "pointer",
-                      fontSize: "0.75rem",
-                      opacity: deleting === r.id ? 0.5 : 1,
-                      flexShrink: 0,
-                    }}
-                    title="Remove restaurant"
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
+            {list.paged.map((r) => (
+              <div key={r.id} style={{ position: "relative" }}>
+                <PortfolioCard restaurant={r} />
+                <button
+                  onClick={() => deleteRestaurant(r.id)}
+                  disabled={deleting === r.id}
+                  style={{
+                    position: "absolute",
+                    top: spacing.md,
+                    right: spacing.md,
+                    padding: `${spacing.xs} ${spacing.md}`,
+                    borderRadius: radius.sm,
+                    border: `1px solid ${colors.danger}40`,
+                    background: "transparent",
+                    color: colors.danger,
+                    cursor: deleting === r.id ? "not-allowed" : "pointer",
+                    fontSize: "0.75rem",
+                    opacity: deleting === r.id ? 0.5 : 1,
+                    zIndex: 2,
+                  }}
+                  title="Remove restaurant"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
 
           {/* Pagination */}

@@ -8,6 +8,7 @@ import { CalculateScoreUseCase } from '../../application/discovery/CalculateScor
 import { EvidenceEngine } from '../../application/discovery/EvidenceEngine';
 import { RecommendationEngine } from '../../application/discovery/RecommendationEngine';
 import { GenerateReportUseCase } from '../../application/discovery/GenerateReportUseCase';
+import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
 
 export class DiscoveryController {
   private calculateScore: CalculateScoreUseCase;
@@ -89,6 +90,9 @@ export class DiscoveryController {
         restaurantId: id,
         rawScores,
       });
+
+      // Capture a snapshot after score recalculation — a meaningful score change point.
+      await captureSnapshot(id);
 
       // 3. Generate recommendations
       const recommendations = this.recommendationEngine.generate(evidence, id);
