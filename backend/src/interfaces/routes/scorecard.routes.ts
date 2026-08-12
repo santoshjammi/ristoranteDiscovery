@@ -5,6 +5,8 @@ import { computeBenchmarks, getBenchmarks, latestBenchmarkTime, type BenchmarkDi
 import { getEvidenceTimeline } from '../../domain/scorecard/EvidenceTimelineService';
 import { simulateImpact, simulateAllImpacts } from '../../domain/scorecard/ImpactSimulationService';
 import { generateExecutivePDF } from '../../application/reporting/ExecutivePDFService';
+import { getCrossFactorReport } from '../../domain/scorecard/CrossFactorService';
+import { compareRestaurant } from '../../domain/scorecard/ComparisonService';
 
 const router = Router();
 
@@ -79,6 +81,26 @@ router.get('/restaurants/:id/scorecard/pdf', async (req: Request, res: Response)
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="intelligence-${req.params.id}.pdf"`);
     res.send(Buffer.from(pdf));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/restaurants/:id/scorecard/relationships — cross-factor relationships
+router.get('/restaurants/:id/scorecard/relationships', async (req: Request, res: Response) => {
+  try {
+    const report = await getCrossFactorReport(req.params.id);
+    res.json({ data: report });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/restaurants/:id/compare — compare against relevant competitors
+router.get('/restaurants/:id/compare', async (req: Request, res: Response) => {
+  try {
+    const comparison = await compareRestaurant(req.params.id);
+    res.json({ data: comparison });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

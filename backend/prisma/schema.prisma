@@ -683,9 +683,12 @@ model Decision {
   evidence        String   // JSON array of evidence references
   reasoning       String   // JSON: engines, explanation
   actionSteps     String   // JSON array
-  status          String   @default("pending") // pending, accepted, dismissed, completed, blocked
+  status          String   @default("pending") // pending, accepted, dismissed, in_progress, completed, verified, improved, blocked
   acceptedAt      DateTime?
+  startedAt       DateTime?
   completedAt     DateTime?
+  verifiedAt      DateTime?
+  improvedAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

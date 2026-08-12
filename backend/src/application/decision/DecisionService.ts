@@ -25,7 +25,10 @@ export class DecisionService {
   }
   async accept(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'accepted', acceptedAt: new Date() } }); }
   async dismiss(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'dismissed' } }); }
+  async start(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'in_progress', startedAt: new Date() } }); }
   async complete(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'completed', completedAt: new Date() } }); }
+  async verify(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'verified', verifiedAt: new Date() } }); }
+  async markImproved(id: string) { return this.prisma.decision.update({ where: { id }, data: { status: 'improved', improvedAt: new Date() } }); }
   async getById(id: string) { return this.prisma.decision.findUnique({ where: { id }, include: { outcomes: true } }); }
   async getStats(restaurantId: string) {
     const [total, accepted, completed, dismissed] = await Promise.all([

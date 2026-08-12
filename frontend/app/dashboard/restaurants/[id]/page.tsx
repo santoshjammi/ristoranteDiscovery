@@ -10,6 +10,8 @@ import { TrendSection, type SnapshotHistory } from "@/components/scorecard/Trend
 import { BenchmarkBar, type BenchmarkResult, type BenchmarkDimension } from "@/components/scorecard/BenchmarkBar";
 import { EvidenceTimeline, type TimelineEvent } from "@/components/scorecard/EvidenceTimeline";
 import { ImpactSimulator, type ImpactSimulation } from "@/components/scorecard/ImpactSimulator";
+import { ComparisonView, type RestaurantComparison } from "@/components/scorecard/ComparisonView";
+import { CrossFactorView, type CrossFactorReport } from "@/components/scorecard/CrossFactorView";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -30,6 +32,8 @@ function ScorecardPage() {
   const [benchmarkDim, setBenchmarkDim] = useState<BenchmarkDimension>("city");
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [impacts, setImpacts] = useState<ImpactSimulation[]>([]);
+  const [comparison, setComparison] = useState<RestaurantComparison | null>(null);
+  const [crossFactor, setCrossFactor] = useState<CrossFactorReport | null>(null);
 
   const fetchScorecard = async () => {
     if (!token || !params.id) return;
@@ -101,6 +105,32 @@ function ScorecardPage() {
     } catch {}
   };
 
+  const fetchComparison = async () => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/compare`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setComparison(data.data);
+      }
+    } catch {}
+  };
+
+  const fetchCrossFactor = async () => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/relationships`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCrossFactor(data.data);
+      }
+    } catch {}
+  };
+
   const downloadPDF = async () => {
     if (!token || !params.id) return;
     try {
@@ -125,6 +155,8 @@ function ScorecardPage() {
   useEffect(() => { fetchBenchmarks(benchmarkDim); }, [token, params.id, benchmarkDim]);
   useEffect(() => { fetchTimeline(); }, [token, params.id]);
   useEffect(() => { fetchImpacts(); }, [token, params.id]);
+  useEffect(() => { fetchComparison(); }, [token, params.id]);
+  useEffect(() => { fetchCrossFactor(); }, [token, params.id]);
 
   if (loading) {
     return (
@@ -313,6 +345,20 @@ function ScorecardPage() {
       <div style={{ marginTop: spacing["2xl"] }}>
         <ImpactSimulator impacts={impacts} />
       </div>
+
+      {/* 5d. Competitive comparison */}
+      {comparison && comparison.competitors.length > 0 && (
+        <div style={{ marginTop: spacing["2xl"] }}>
+          <ComparisonView comparison={comparison} />
+        </div>
+      )}
+
+      {/* 5e. Cross-factor relationships */}
+      {crossFactor && (
+        <div style={{ marginTop: spacing["2xl"] }}>
+          <CrossFactorView report={crossFactor} />
+        </div>
+      )}
 
       {/* 6. Pending Observation factors clearly separated */}
       <div style={{ marginTop: spacing["2xl"] }}>

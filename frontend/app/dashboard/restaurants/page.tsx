@@ -8,6 +8,7 @@ import { useList } from "@/lib/useList";
 import { SearchBar, SortButton, FilterDropdown, Pagination, ActiveFilters } from "@/components/shared/ListControls";
 import { PortfolioCard, PortfolioSummaryBar, type Portfolio, type PortfolioRestaurant } from "@/components/scorecard/PortfolioCard";
 import { PortfolioHeatMap, type HeatFilter } from "@/components/scorecard/PortfolioHeatMap";
+import { PrioritizationView, type PrioritizedPortfolio, type SortKey } from "@/components/scorecard/PrioritizationView";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -24,8 +25,10 @@ function RestaurantList() {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [view, setView] = useState<"cards" | "heatmap">("cards");
+  const [view, setView] = useState<"cards" | "heatmap" | "prioritized">("cards");
   const [heatFilter, setHeatFilter] = useState<"all" | "critical" | "attention" | "healthy">("all");
+  const [prioritized, setPrioritized] = useState<PrioritizedPortfolio | null>(null);
+  const [prioritizedLoading, setPrioritizedLoading] = useState(false);
 
   const fetchPortfolio = async () => {
     if (!token) return;
@@ -45,6 +48,20 @@ function RestaurantList() {
   };
 
   useEffect(() => { fetchPortfolio(); }, [token]);
+
+  const fetchPrioritized = async (sortKey: SortKey = "urgency") => {
+    if (!token) return;
+    setPrioritizedLoading(true);
+    try {
+      const res = await fetch(`${API}/api/portfolio/prioritized?sortBy=${sortKey}&limit=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPrioritized(data.data);
+      }
+    } catch {} finally { setPrioritizedLoading(false); }
+  };
 
   const restaurants: PortfolioRestaurant[] = portfolio?.restaurants || [];
 
@@ -135,12 +152,12 @@ function RestaurantList() {
       {/* Portfolio summary bar */}
       {portfolio && <PortfolioSummaryBar summary={portfolio.summary} />}
 
-      {/* View toggle: Cards | Heat Map */}
+      {/* View toggle: Cards | Heat Map | Prioritized */}
       <div style={{ display: "flex", gap: spacing.sm, marginBottom: spacing.lg }}>
-        {(["cards", "heatmap"] as const).map((v) => (
+        {(["cards", "heatmap", "prioritized"] as const).map((v) => (
           <button
             key={v}
-            onClick={() => setView(v)}
+            onClick={() => { setView(v); if (v === "prioritized") fetchPrioritized(); }}
             style={{
               padding: `${spacing.sm} ${spacing.lg}`,
               borderRadius: radius.md,
@@ -152,10 +169,23 @@ function RestaurantList() {
               fontSize: "0.8125rem",
             }}
           >
-            {v === "cards" ? "Cards" : "Heat Map"}
+            {v === "cards" ? "Cards" : v === "heatmap" ? "Heat Map" : "Prioritized"}
           </button>
         ))}
       </div>
+
+      {/* Prioritized view */}
+      {view === "prioritized" && (
+        <div style={{ marginBottom: spacing.xl }}>
+          {prioritizedLoading ? <LoadingSkeleton count={6} height="4rem" width="100%" /> : (
+            prioritized ? (
+              <PrioritizationView portfolio={prioritized} onSort={(k) => fetchPrioritized(k)} />
+            ) : (
+              <p style={{ ...typography.small, color: colors.muted }}>Loading prioritization…</p>
+            )
+          )}
+        </div>
+      )}
 
       {/* Heat map view */}
       {view === "heatmap" && (

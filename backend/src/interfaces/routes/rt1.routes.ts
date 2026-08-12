@@ -126,6 +126,21 @@ router.post('/decisions/:id/complete', authMiddleware, async (req: Request, res:
   await events.track('decision_completed', { restaurantId: req.body.restaurantId, userId: (req as any).userId, properties: { decisionId: req.params.id } });
   res.json({ message: 'Decision completed' });
 });
+router.post('/decisions/:id/start', authMiddleware, async (req: Request, res: Response) => {
+  await decisions.start(req.params.id);
+  await events.track('decision_started', { restaurantId: req.body.restaurantId, userId: (req as any).userId, properties: { decisionId: req.params.id } });
+  res.json({ message: 'Decision in progress' });
+});
+router.post('/decisions/:id/verify', authMiddleware, async (req: Request, res: Response) => {
+  await decisions.verify(req.params.id);
+  await events.track('decision_verified', { restaurantId: req.body.restaurantId, userId: (req as any).userId, properties: { decisionId: req.params.id } });
+  res.json({ message: 'Decision verified' });
+});
+router.post('/decisions/:id/improved', authMiddleware, async (req: Request, res: Response) => {
+  await decisions.markImproved(req.params.id);
+  await events.track('decision_improved', { restaurantId: req.body.restaurantId, userId: (req as any).userId, properties: { decisionId: req.params.id } });
+  res.json({ message: 'Decision marked improved' });
+});
 router.get('/restaurants/:id/decision-stats', authMiddleware, async (req: Request, res: Response) => {
   res.json({ data: await decisions.getStats(req.params.id) });
 });
