@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
-import { MasterScore, CategoryCard, statusColor, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
+import { MasterScore, CategoryScoreStrip, ExpandableFactorCard, ProblemFactors, PendingFactors, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -65,6 +65,9 @@ function ScorecardPage() {
 
   // Flatten all factors for search/filter/sort
   const allFactors = scorecard.categories.flatMap((c) => c.factors);
+  const liveFactors = allFactors.filter((f) => f.status !== "pending_observation");
+  const pendingFactors = allFactors.filter((f) => f.status === "pending_observation");
+
   const filteredFactors = allFactors.filter((f) => {
     if (searchQuery && !f.name.toLowerCase().includes(searchQuery.toLowerCase()) && !f.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (statusFilter !== "all" && f.status !== statusFilter) return false;
@@ -81,6 +84,7 @@ function ScorecardPage() {
   });
 
   const selectedFactorData = selectedFactor ? allFactors.find((f) => f.id === selectedFactor) : null;
+  const expandedFactor = selectedFactorData && selectedFactorData.status !== "pending_observation" ? selectedFactor : null;
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -91,11 +95,17 @@ function ScorecardPage() {
         <span style={{ fontSize: "0.8125rem", color: colors.text, fontWeight: 500 }}>{scorecard.restaurantName}</span>
       </div>
 
-      {/* Master Score */}
-      <MasterScore score={scorecard.overallScore} status={scorecard.overallStatus} liveFactors={scorecard.liveFactors} totalFactors={scorecard.totalFactors} />
+      {/* 1. Overall Restaurant Intelligence Score */}
+      <MasterScore score={scorecard.overallScore} status={scorecard.overallStatus} liveFactors={scorecard.liveFactors} totalFactors={scorecard.totalFactors} lastUpdated={scorecard.lastUpdated} />
 
-      {/* Search & Filter */}
-      <div style={{ display: "flex", gap: spacing.md, alignItems: "center", marginTop: spacing["2xl"], marginBottom: spacing.xl, flexWrap: "wrap" }}>
+      {/* 2. Five category scores */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}` }}>Category Scores</h3>
+        <CategoryScoreStrip categories={scorecard.categories} />
+      </div>
+
+      {/* 3. Search / sort / filter */}
+      <div style={{ display: "flex", gap: spacing.md, alignItems: "center", marginTop: spacing["2xl"], marginBottom: spacing.md, flexWrap: "wrap" }}>
         <input
           placeholder="Search factors..."
           value={searchQuery}
@@ -133,110 +143,30 @@ function ScorecardPage() {
           <option value="category">Sort: Category</option>
         </select>
       </div>
+      <p style={{ ...typography.small, margin: `0 0 ${spacing.lg}`, color: colors.mutedDarker }}>
+        Showing {filteredFactors.length} of {allFactors.length} factors · {liveFactors.length} measured · {pendingFactors.length} pending
+      </p>
 
-      {/* Factor summary bar */}
-      <div style={{ marginBottom: spacing.xl }}>
-        <p style={{ ...typography.small, margin: 0, color: colors.mutedDarker }}>
-          Showing {filteredFactors.length} of {allFactors.length} factors
-          {sortBy === "category" ? " — sorted by category" : ""}
-        </p>
-      </div>
-
-      {/* Factor Detail Panel */}
-      {selectedFactorData && (
-        <div style={{ padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.primary}`, marginBottom: spacing.xl }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: spacing.md }}>
-            <div>
-              <p style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: colors.text }}>{selectedFactorData.name}</p>
-              <p style={{ ...typography.small, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>{selectedFactorData.description}</p>
-            </div>
-            <button onClick={() => setSelectedFactor(null)} style={{ background: "none", border: "none", color: colors.muted, cursor: "pointer", fontSize: "0.875rem", padding: 0 }}>✕</button>
-          </div>
-          {selectedFactorData.score !== null ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: spacing.md }}>
-              <div style={{ padding: spacing.md, background: colors.bg, borderRadius: radius.md }}>
-                <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker }}>Current Score</p>
-                <p style={{ margin: `${spacing.xs} 0 0`, fontSize: "1.5rem", fontWeight: 700, color: colors.text }}>{selectedFactorData.score}</p>
-              </div>
-              <div style={{ padding: spacing.md, background: colors.bg, borderRadius: radius.md }}>
-                <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker }}>Business Impact</p>
-                <p style={{ ...typography.small, margin: `${spacing.xs} 0 0`, color: colors.text }}>{selectedFactorData.businessImpact}</p>
-              </div>
-              <div style={{ padding: spacing.md, background: colors.bg, borderRadius: radius.md }}>
-                <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker }}>Expected Improvement</p>
-                <p style={{ ...typography.small, margin: `${spacing.xs} 0 0`, color: colors.success }}>{selectedFactorData.expectedImprovement}</p>
-              </div>
-              <div style={{ padding: spacing.md, background: colors.bg, borderRadius: radius.md }}>
-                <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker }}>Recommended Actions</p>
-                <ul style={{ margin: `${spacing.xs} 0 0`, paddingLeft: spacing.lg, fontSize: "0.75rem", color: colors.muted }}>
-                  {selectedFactorData.recommendedActions.map((a, i) => <li key={i}>{a}</li>)}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div style={{ padding: spacing.lg, background: colors.bg, borderRadius: radius.md }}>
-              <p style={{ ...typography.small, margin: 0, color: colors.mutedDarker, fontStyle: "italic" }}>
-                This factor requires {selectedFactorData.connectorRequired || "a data connector"} to be measured. It will become available once the connector is configured.
-              </p>
-            </div>
-          )}
-
-          {/* Sub-signal evidence drill-down */}
-          {selectedFactorData.subSignals.length > 0 && (
-            <div style={{ marginTop: spacing.lg, padding: spacing.lg, background: colors.bg, borderRadius: radius.md }}>
-              <p style={{ ...typography.label, margin: `0 0 ${spacing.sm}`, color: colors.mutedDarker, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.6875rem", fontWeight: 600 }}>Supporting Sub-Signals</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}>
-                {selectedFactorData.subSignals.map((s) => (
-                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: spacing.md, background: colors.surface, borderRadius: radius.md, border: `1px solid ${colors.border}` }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: colors.text }}>{s.name}</p>
-                      {s.evidence.length > 0 && (
-                        <ul style={{ margin: `${spacing.xs} 0 0`, paddingLeft: spacing.lg, fontSize: "0.6875rem", color: colors.mutedDarker }}>
-                          {s.evidence.map((e, i) => <li key={i}>{e}</li>)}
-                        </ul>
-                      )}
-                      {s.evidence.length === 0 && (
-                        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker, fontStyle: "italic" }}>No supporting evidence yet — pending observation</p>
-                      )}
-                    </div>
-                    <span style={{ marginLeft: spacing.md, fontSize: "0.875rem", fontWeight: 700, color: s.score !== null ? statusColor(s.status) : colors.mutedDarker }}>
-                      {s.score !== null ? s.score : "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Category Cards */}
-      <div style={{ display: "flex", flexDirection: "column", gap: spacing.xl }}>
-        {scorecard.categories.map((cat) => (
-          <CategoryCard key={cat.id} category={cat} onFactorSelect={setSelectedFactor} />
+      {/* 4. 25-factor grid (expandable sub-signals) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: spacing.md }}>
+        {filteredFactors.map((f) => (
+          <ExpandableFactorCard
+            key={f.id}
+            factor={f}
+            expanded={expandedFactor === f.id}
+            onToggle={(id) => setSelectedFactor(selectedFactor === id ? null : id)}
+          />
         ))}
       </div>
 
-      {/* Priority Opportunities */}
-      <div style={{ marginTop: spacing["2xl"], padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.border}` }}>
-        <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}` }}>Priority Opportunities</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: spacing.md }}>
-          {allFactors
-            .filter((f) => f.status === "needs_attention" || f.status === "critical")
-            .slice(0, 5)
-            .map((f) => (
-              <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: spacing.md, background: colors.bg, borderRadius: radius.md, cursor: "pointer" }}
-                onClick={() => setSelectedFactor(f.id)}>
-                <div>
-                  <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: colors.text }}>{f.name}</p>
-                  <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>{f.expectedImprovement}</p>
-                </div>
-                <span style={{ padding: `${spacing.xs} ${spacing.md}`, borderRadius: radius.sm, fontSize: "0.6875rem", fontWeight: 600, background: f.status === "critical" ? colors.dangerLight : `${colors.warning}20`, color: f.status === "critical" ? colors.danger : colors.warning }}>
-                  {f.status === "critical" ? "Critical" : "Needs Attention"}
-                </span>
-              </div>
-            ))}
-        </div>
+      {/* 5. Top problem factors */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <ProblemFactors factors={allFactors} onSelect={(id) => setSelectedFactor(id)} />
+      </div>
+
+      {/* 6. Pending Observation factors clearly separated */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <PendingFactors factors={allFactors} onSelect={(id) => setSelectedFactor(id)} />
       </div>
     </div>
   );
