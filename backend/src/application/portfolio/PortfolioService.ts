@@ -41,6 +41,23 @@ export interface Portfolio {
 }
 
 /**
+ * Parse cuisineTypes which may be stored as a JSON array string OR a
+ * comma-separated string. Always returns an array.
+ */
+function parseCuisineTypes(raw: string | null): string[] {
+  if (!raw) return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) return parsed.map((c) => String(c));
+    return [String(parsed)];
+  } catch {
+    return trimmed.split(',').map((c) => c.trim()).filter(Boolean);
+  }
+}
+
+/**
  * Compute the trend for a restaurant from its snapshot history.
  * Compares the latest snapshot to the earliest snapshot in the last 30 days.
  */
@@ -62,12 +79,16 @@ async function computeTrend(restaurantId: string): Promise<'up' | 'down' | 'stab
 
 /**
  * Build the full portfolio view.
+ * Optional limit caps the number of restaurants scored per request (for scale);
+ * summary is always computed across the whole portfolio.
  */
-export async function getPortfolio(): Promise<Portfolio> {
-  const restaurants = await prisma.restaurant.findMany({
+export async function getPortfolio(limit?: number): Promise<Portfolio> {
+  const allRestaurants = await prisma.restaurant.findMany({
     where: { disabled: false },
     orderBy: { name: 'asc' },
   });
+
+  const restaurants = limit ? allRestaurants.slice(0, limit) : allRestaurants;
 
   const items: PortfolioRestaurant[] = [];
   let totalScore = 0;
@@ -110,7 +131,7 @@ export async function getPortfolio(): Promise<Portfolio> {
       id: r.id,
       name: r.name,
       city: r.city,
-      cuisineTypes: JSON.parse(r.cuisineTypes || '[]'),
+      cuisineTypes: parseCuisineTypes(r.cuisineTypes),
       priceRange: r.priceRange,
       overallScore: scorecard.overallScore,
       overallStatus: scorecard.overallStatus,
@@ -125,9 +146,9 @@ export async function getPortfolio(): Promise<Portfolio> {
   }
 
   const summary: PortfolioSummary = {
-    total: restaurants.length,
-    active: restaurants.filter((r) => !r.disabled).length,
-    disabled: restaurants.filter((r) => r.disabled).length,
+    total: allRestaurants.length,
+    active: allRestaurants.filter((r) => !r.disabled).length,
+    disabled: allRestaurants.filter((r) => r.disabled).length,
     averageScore: scored > 0 ? Math.round(totalScore / scored) : null,
     criticalCount,
     attentionCount,
@@ -137,3 +158,4 @@ export async function getPortfolio(): Promise<Portfolio> {
 
   return { summary, restaurants: items };
 }
+

@@ -4,9 +4,11 @@ import { getPortfolio } from '../../application/portfolio/PortfolioService';
 const router = Router();
 
 // GET /api/portfolio — executive portfolio view (all restaurants' scores)
-router.get('/', async (_req: Request, res: Response) => {
+// Supports ?limit=N to cap the number of restaurants scored per request.
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const portfolio = await getPortfolio();
+    const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
+    const portfolio = await getPortfolio(limit);
     res.json({ data: portfolio });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

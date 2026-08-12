@@ -7,6 +7,7 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useList } from "@/lib/useList";
 import { SearchBar, SortButton, FilterDropdown, Pagination, ActiveFilters } from "@/components/shared/ListControls";
 import { PortfolioCard, PortfolioSummaryBar, type Portfolio, type PortfolioRestaurant } from "@/components/scorecard/PortfolioCard";
+import { PortfolioHeatMap, type HeatFilter } from "@/components/scorecard/PortfolioHeatMap";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -23,6 +24,8 @@ function RestaurantList() {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [view, setView] = useState<"cards" | "heatmap">("cards");
+  const [heatFilter, setHeatFilter] = useState<"all" | "critical" | "attention" | "healthy">("all");
 
   const fetchPortfolio = async () => {
     if (!token) return;
@@ -132,6 +135,56 @@ function RestaurantList() {
       {/* Portfolio summary bar */}
       {portfolio && <PortfolioSummaryBar summary={portfolio.summary} />}
 
+      {/* View toggle: Cards | Heat Map */}
+      <div style={{ display: "flex", gap: spacing.sm, marginBottom: spacing.lg }}>
+        {(["cards", "heatmap"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            style={{
+              padding: `${spacing.sm} ${spacing.lg}`,
+              borderRadius: radius.md,
+              border: `1px solid ${view === v ? colors.primary : colors.border}`,
+              background: view === v ? colors.primaryLight : "transparent",
+              color: view === v ? colors.primary : colors.muted,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "0.8125rem",
+            }}
+          >
+            {v === "cards" ? "Cards" : "Heat Map"}
+          </button>
+        ))}
+      </div>
+
+      {/* Heat map view */}
+      {view === "heatmap" && (
+        <div style={{ marginBottom: spacing.xl }}>
+          <div style={{ display: "flex", gap: spacing.sm, marginBottom: spacing.md, flexWrap: "wrap" }}>
+            {(["all", "critical", "attention", "healthy"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setHeatFilter(f)}
+                style={{
+                  padding: `${spacing.xs} ${spacing.md}`,
+                  borderRadius: radius.sm,
+                  border: `1px solid ${heatFilter === f ? colors.primary : colors.border}`,
+                  background: heatFilter === f ? colors.primaryLight : "transparent",
+                  color: heatFilter === f ? colors.primary : colors.muted,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: "0.75rem",
+                  textTransform: "capitalize",
+                }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          <PortfolioHeatMap restaurants={restaurants} filter={heatFilter} />
+        </div>
+      )}
+
       {/* Add Form */}
       {showForm && (
         <form onSubmit={createRestaurant} style={{ display: "flex", flexDirection: "column", gap: spacing.md, padding: spacing.xl, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, marginBottom: spacing.xl }}>
@@ -161,8 +214,8 @@ function RestaurantList() {
       {/* Active Filters */}
       <ActiveFilters filters={list.filters} onRemove={list.removeFilter} onClear={list.clearFilters} />
 
-      {/* Empty State */}
-      {list.totalCount === 0 ? (
+      {/* Cards view */}
+      {view === "cards" && (list.totalCount === 0 ? (
         <div style={{ textAlign: "center", padding: spacing["4xl"], background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}` }}>
           <p style={{ fontSize: "2rem", margin: `0 0 ${spacing.lg}` }}>🍽️</p>
           <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.sm}` }}>{restaurants.length === 0 ? "No restaurants yet" : "No matching restaurants"}</h3>
@@ -215,7 +268,7 @@ function RestaurantList() {
           {/* Pagination */}
           <Pagination page={list.page} totalPages={list.totalPages} totalCount={list.totalCount} onPageChange={list.setPage} />
         </>
-      )}
+      ))}
     </div>
   );
 }

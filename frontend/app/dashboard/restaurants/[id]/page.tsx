@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { MasterScore, CategoryScoreStrip, ExpandableFactorCard, ProblemFactors, PendingFactors, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
+import { TrendSection, type SnapshotHistory } from "@/components/scorecard/TrendChart";
+import { BenchmarkBar, type BenchmarkResult, type BenchmarkDimension } from "@/components/scorecard/BenchmarkBar";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -20,6 +22,10 @@ function ScorecardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
+  const [history, setHistory] = useState<SnapshotHistory | null>(null);
+  const [historyRange, setHistoryRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
+  const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([]);
+  const [benchmarkDim, setBenchmarkDim] = useState<BenchmarkDimension>("city");
 
   const fetchScorecard = async () => {
     if (!token || !params.id) return;
@@ -39,7 +45,35 @@ function ScorecardPage() {
     }
   };
 
+  const fetchHistory = async (range: "7d" | "30d" | "90d" | "all") => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/history?range=${range}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.data);
+      }
+    } catch {}
+  };
+
+  const fetchBenchmarks = async (dim: BenchmarkDimension) => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/benchmarks?dimension=${dim}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBenchmarks(data.data);
+      }
+    } catch {}
+  };
+
   useEffect(() => { fetchScorecard(); }, [token, params.id]);
+  useEffect(() => { fetchHistory(historyRange); }, [token, params.id, historyRange]);
+  useEffect(() => { fetchBenchmarks(benchmarkDim); }, [token, params.id, benchmarkDim]);
 
   if (loading) {
     return (
@@ -102,6 +136,56 @@ function ScorecardPage() {
       <div style={{ marginTop: spacing["2xl"] }}>
         <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}` }}>Category Scores</h3>
         <CategoryScoreStrip categories={scorecard.categories} />
+      </div>
+
+      {/* 2b. Historical trend */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <TrendSection
+          title="Overall Score Trend"
+          history={history}
+          onRange={(r) => setHistoryRange(r)}
+        />
+      </div>
+
+      {/* 2c. Benchmarking */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <div style={{ padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.border}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md }}>
+            <div>
+              <h3 style={{ ...typography.h3, margin: 0 }}>Benchmarking</h3>
+              <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Compared to peers</p>
+            </div>
+            <div style={{ display: "flex", gap: spacing.xs }}>
+              {(["city", "cuisine", "price", "competitors"] as BenchmarkDimension[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setBenchmarkDim(d)}
+                  style={{
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    borderRadius: radius.sm,
+                    border: `1px solid ${benchmarkDim === d ? colors.primary : colors.border}`,
+                    background: benchmarkDim === d ? colors.primaryLight : "transparent",
+                    color: benchmarkDim === d ? colors.primary : colors.muted,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontSize: "0.625rem",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: spacing.md }}>
+            {benchmarks.length === 0 && (
+              <p style={{ ...typography.small, color: colors.muted }}>Loading benchmarks…</p>
+            )}
+            {benchmarks.map((b) => (
+              <BenchmarkBar key={b.factorId} benchmark={b} />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* 3. Search / sort / filter */}

@@ -9,7 +9,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3040',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -27,8 +27,8 @@ export default defineConfig({
       timeout: 30000,
     },
     {
-      command: 'cd ../frontend && npx next dev',
-      port: 3000,
+      command: 'cd ../frontend && npx next dev --port 3040',
+      port: 3040,
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },
