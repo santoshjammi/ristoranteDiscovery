@@ -1,250 +1,316 @@
-import { GoogleGenAI } from '@google/genai';
-import OpenAI from 'openai';
+/**
+ * AI Service — multi-provider structured output helper.
+ *
+ * Default behavior (generateJSON):
+ *   1. NVIDIA NIM         (primary, if NVIDIA_API_KEY is set)
+ *   2. Ollama Cloud       (secondary, if OLLAMA_API_KEY is set)
+ *   3. Local Ollama       (last resort, always available when running locally)
+ *   4. Mock fallback      (if AI_ALLOW_MOCK_FALLBACK=true and all providers fail)
+ *
+ * FAQ generation (generateJSONLight):
+ *   Always routes through local Ollama — the light model is small enough.
+ */
 
-export class AIService {
-  private geminiClient: GoogleGenAI | null = null;
-  private openaiClient: OpenAI | null = null;
+import {
+  ALLOW_MOCK_FALLBACK,
+  COMPLEX_MODEL,
+  LIGHT_MODEL,
+  NVIDIA_API_KEY,
+  NVIDIA_BASE_URL,
+  NVIDIA_MODEL,
+  OLLAMA_CLOUD_API_KEY,
+  OLLAMA_CLOUD_BASE_URL,
+  OLLAMA_CLOUD_MODEL,
+  OLLAMA_HOST,
+} from './ai.config';
 
-  constructor() {
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
+/* ── public interface ─────────────────────────────────────── */
 
-    if (geminiKey) {
-      console.log('🤖 AI Service: Initialized with Google Gemini.');
-      this.geminiClient = new GoogleGenAI({ apiKey: geminiKey });
-    } else if (openaiKey) {
-      console.log('🤖 AI Service: Initialized with OpenAI.');
-      this.openaiClient = new OpenAI({ apiKey: openaiKey });
+export interface GenerateOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  allowMockFallback?: boolean;
+  /** Which provider to use. Defaults to 'auto' (cascade). */
+  provider?: 'nvidia' | 'ollama-cloud' | 'local' | 'auto';
+}
+
+/* ── internal shapes ──────────────────────────────────────── */
+
+interface OpenAICompatibleResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
+interface OllamaChatResponse {
+  message?: { content?: string };
+  response?: string;
+}
+
+type Provider = 'nvidia' | 'ollama-cloud' | 'local';
+
+/* ── OpenAI-compatible adapter ───────────────────────────── */
+
+async function openAICompatibleChat(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  messages: Array<{ role: 'system' | 'user'; content: string }>,
+  temperature: number,
+  maxTokens: number,
+): Promise<OpenAICompatibleResponse> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`OpenAI-compatible request to ${baseUrl} returned ${res.status}: ${text}`);
+  }
+
+  return res.json() as Promise<OpenAICompatibleResponse>;
+}
+
+/* ── service ──────────────────────────────────────────────── */
+
+class AIService {
+  private ollamaAvailable: boolean | null = null;
+
+  async init(): Promise<void> {
+    await this.pingOllama();
+  }
+
+  private async pingOllama(): Promise<boolean> {
+    if (this.ollamaAvailable !== null) return this.ollamaAvailable;
+
+    try {
+      const res = await fetch(`${OLLAMA_HOST}/api/tags`);
+      this.ollamaAvailable = res.ok;
+      if (this.ollamaAvailable) {
+        console.log(`🤖 AI Service: connected to local Ollama at ${OLLAMA_HOST}.`);
+      } else {
+        console.warn(
+          `⚠️ AI Service: Ollama responded with ${res.status}; local AI is currently unavailable.`,
+        );
+      }
+    } catch (error) {
+      this.ollamaAvailable = false;
+      console.warn(`⚠️ AI Service: unable to reach Ollama at ${OLLAMA_HOST}.`, error);
+    }
+
+    return this.ollamaAvailable;
+  }
+
+  /* ── main entry point ─────────────────────────────────── */
+
+  async generateJSON<T>(
+    prompt: string,
+    systemInstruction?: string,
+    options?: GenerateOptions,
+  ): Promise<T> {
+    const model = options?.model || COMPLEX_MODEL;
+    const fallbackAllowed = options?.allowMockFallback ?? ALLOW_MOCK_FALLBACK;
+
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+    if (systemInstruction?.trim()) {
+      messages.push({ role: 'system', content: systemInstruction.trim() });
+    }
+    messages.push({
+      role: 'user',
+      content: `${prompt.trim()}\n\nReturn valid JSON only. No markdown. No commentary.`,
+    });
+
+    const temperature = options?.temperature ?? 0.2;
+    const maxTokens = options?.maxTokens ?? 2048;
+    const requestedProvider: Provider | 'auto' = options?.provider || 'auto';
+
+    // Resolve cascade order based on which provider is available/configured
+    const providers: Provider[] = (() => {
+      if (requestedProvider !== 'auto') return [requestedProvider];
+
+      const chain: Provider[] = [];
+      if (NVIDIA_API_KEY) chain.push('nvidia');
+      if (OLLAMA_CLOUD_API_KEY) chain.push('ollama-cloud');
+      chain.push('local'); // last resort — always included
+      return chain;
+    })();
+
+    if (providers.length === 0) {
+      if (fallbackAllowed) return this.mockResponse<T>();
+      throw new Error(
+        'No AI providers configured. Set NVIDIA_API_KEY or OLLAMA_API_KEY, or run local Ollama.',
+      );
+    }
+
+    let lastError: Error | null = null;
+
+    for (const provider of providers) {
+      try {
+        return await this.callProvider<T>(provider, model, messages, temperature, maxTokens);
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(
+          `⚠️ AI Service: ${provider} failed (${(error as Error).message}), trying next provider…`,
+        );
+      }
+    }
+
+    // All providers exhausted
+    if (fallbackAllowed) {
+      console.warn('⚠️ AI Service: all providers failed, using mock fallback.');
+      return this.mockResponse<T>();
+    }
+
+    throw new Error(
+      `Failed to generate structured AI output via any provider. Last error: ${(lastError as Error).message}`,
+    );
+  }
+
+  /* ── per-provider dispatch ──────────────────────────────── */
+
+  private async callProvider<T>(
+    provider: Provider,
+    model: string,
+    messages: Array<{ role: 'system' | 'user'; content: string }>,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<T> {
+    switch (provider) {
+      case 'nvidia': {
+        if (!NVIDIA_API_KEY) throw new Error('NVIDIA_API_KEY not set');
+        const res = await openAICompatibleChat(
+          NVIDIA_BASE_URL,
+          NVIDIA_API_KEY,
+          model,
+          messages,
+          temperature,
+          maxTokens,
+        );
+        const content = res.choices?.[0]?.message?.content;
+        if (!content) throw new Error('NVIDIA NIM returned empty content');
+        return this.parseJSON<T>(content);
+      }
+
+      case 'ollama-cloud': {
+        if (!OLLAMA_CLOUD_API_KEY) throw new Error('OLLAMA_API_KEY not set');
+        const res = await openAICompatibleChat(
+          OLLAMA_CLOUD_BASE_URL,
+          OLLAMA_CLOUD_API_KEY,
+          model,
+          messages,
+          temperature,
+          maxTokens,
+        );
+        const content = res.choices?.[0]?.message?.content;
+        if (!content) throw new Error('Ollama Cloud returned empty content');
+        return this.parseJSON<T>(content);
+      }
+
+      case 'local': {
+        const available = await this.pingOllama();
+        if (!available) throw new Error('Local Ollama is unavailable');
+
+        const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            messages,
+            stream: false,
+            format: 'json',
+            options: { temperature, num_predict: maxTokens },
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Ollama returned ${res.status} ${res.statusText}`);
+
+        const data = (await res.json()) as OllamaChatResponse;
+        const content = data.message?.content ?? data.response ?? '';
+        if (!content) throw new Error('Local Ollama returned empty content');
+        return this.parseJSON<T>(content);
+      }
+
+      default:
+        throw new Error(`Unknown provider: ${provider}`);
+    }
+  }
+
+  /* ── light-model shortcut (FAQ only, local only) ───────── */
+
+  async generateJSONLight<T>(
+    prompt: string,
+    systemInstruction?: string,
+    options?: Omit<GenerateOptions, 'model'>,
+  ): Promise<T> {
+    return this.generateJSON<T>(prompt, systemInstruction, {
+      ...options,
+      model: LIGHT_MODEL,
+      provider: 'local', // light models stay local
+    });
+  }
+
+  /* ── JSON parsing helpers (unchanged) ───────────────────── */
+
+  private parseJSON<T>(content: string): T {
+    const trimmed = content.trim();
+    if (!trimmed) throw new Error('Empty response from AI');
+
+    const candidates = [
+      trimmed,
+      this.extractFence(trimmed),
+      this.extractFirstJsonValue(trimmed),
+    ].filter((v): v is string => Boolean(v));
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate) as T;
+      } catch {
+        // continue to next candidate
+      }
+    }
+
+    throw new Error(
+      `Failed to parse AI response as JSON. Preview: ${trimmed.slice(0, 300)}`,
+    );
+  }
+
+  private extractFence(text: string): string | null {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    return match?.[1]?.trim() || null;
+  }
+
+  private extractFirstJsonValue(text: string): string | null {
+    const objectStart = text.indexOf('{');
+    const arrayStart = text.indexOf('[');
+
+    let start = -1;
+    if (objectStart >= 0 && arrayStart >= 0) {
+      start = Math.min(objectStart, arrayStart);
     } else {
-      console.warn('⚠️ AI Service: No API keys configured. Running in mock mode.');
+      start = objectStart >= 0 ? objectStart : arrayStart;
     }
+    if (start < 0) return null;
+
+    const slice = text.slice(start);
+    const endCandidates = [slice.lastIndexOf('}'), slice.lastIndexOf(']')].filter((idx) => idx >= 0);
+    if (endCandidates.length === 0) return slice.trim();
+
+    const end = Math.max(...endCandidates);
+    return slice.slice(0, end + 1).trim();
   }
 
-  /**
-   * General-purpose structured JSON completion.
-   */
-  async generateJSON<T>(prompt: string, systemInstruction?: string): Promise<T> {
-    const instructionPrompt = systemInstruction 
-      ? `${systemInstruction}\n\nUser request:\n${prompt}`
-      : prompt;
-
-    // 1. Google Gemini SDK Integration
-    if (this.geminiClient) {
-      try {
-        const response = await this.geminiClient.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: instructionPrompt,
-          config: {
-            responseMimeType: 'application/json',
-          }
-        });
-
-        const text = response.text;
-        if (!text) {
-          throw new Error('Empty response from Gemini');
-        }
-
-        return JSON.parse(text) as T;
-      } catch (error) {
-        console.error('Gemini execution error, trying fallback parser:', error);
-        throw error;
-      }
-    }
-
-    // 2. OpenAI SDK Integration
-    if (this.openaiClient) {
-      try {
-        const response = await this.openaiClient.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'You are an advanced AI assistant. Return your response strictly as valid, parsable JSON.' },
-            { role: 'user', content: instructionPrompt }
-          ],
-          response_format: { type: 'json_object' }
-        });
-
-        const text = response.choices[0].message.content;
-        if (!text) {
-          throw new Error('Empty response from OpenAI');
-        }
-
-        return JSON.parse(text) as T;
-      } catch (error) {
-        console.error('OpenAI execution error:', error);
-        throw error;
-      }
-    }
-
-    // 3. Fallback Mock Service (TIRDE Specialized Mock Engine)
-    console.warn('🚨 AI Service running in TIRDE MOCK mode. Returning simulated responses.');
-    return this.getMockResponse<T>(prompt);
-  }
-
-  private getMockResponse<T>(prompt: string): T {
-    const lower = prompt.toLowerCase();
-    
-    // 1. Check for SEO Audits (TIRDE NC Triangle specific landmarks)
-    if (lower.includes('seo audit') || lower.includes('gbp') || lower.includes('audit')) {
-      return {
-        scorecard: {
-          photoCompleteness: 90,
-          descriptionCompleteness: 75,
-          hoursCompleteness: 95,
-          overallScore: 86
-        },
-        neighborhoods: ["West Cary", "Morrisville Town Center", "RTP Corridor", "Brier Creek"],
-        landmarks: ["Lenovo Cary Campus", "Cisco Systems RTP", "Lake Crabtree County Park", "MetLife Cary Offices"],
-        keywordOpportunities: [
-          "best chicken biryani morrisville nc",
-          "indian lunch buffet rtp",
-          "authentic south indian food cary"
-        ],
-        actionItems: [
-          {
-            task: "Update Google description to reference close proximity to Lenovo Cary Campus and Cisco RTP.",
-            priority: "High",
-            impact: "Improves ranking for high-volume office worker lunch queries."
-          },
-          {
-            task: "Add 10 high-resolution photos highlighting vegetarian options and buffet setup.",
-            priority: "High",
-            impact: "Boosts conversion rates for weekend family dining searches."
-          },
-          {
-            task: "Publish weekly GBP updates targeting keyword 'authentic south indian cary'.",
-            priority: "Medium",
-            impact: "Increases authority score in local map listings."
-          }
-        ]
-      } as unknown as T;
-    }
-
-    // 2. Check for RAG Search / Chat matching (TIRDE Indian cuisine specific answers)
-    if (lower.includes('retrieved context') || lower.includes('concierge') || lower.includes('search query')) {
-      return {
-        answer: "I highly recommend **Biryani Maxx** located in Morrisville near the Lenovo Campus. They serve a legendary **Hyderabadi Chicken Biryani ($16.50)** which features slow-cooked basmati rice and marinated chicken, highly praised by customers in 18 positive mentions. For South Indian specialties, check out **Dharani Cary** which serves a crispy, golden **Masala Dosa ($11.00)**.",
-        citations: [
-          {
-            restaurantId: "demo-biryani-maxx",
-            restaurantName: "Biryani Maxx",
-            entityType: "menuItem",
-            entityName: "Hyderabadi Chicken Biryani",
-            details: "$16.50"
-          },
-          {
-            restaurantId: "demo-dharani-cary",
-            restaurantName: "Dharani Cary",
-            entityType: "menuItem",
-            entityName: "Masala Dosa",
-            details: "$11.00"
-          }
-        ]
-      } as unknown as T;
-    }
-
-    // 3. Check for FAQ (TIRDE Indian specifics)
-    if (lower.includes('faq') || lower.includes('question')) {
-      return {
-        faqs: [
-          {
-            question: "Are your menu items suitable for vegetarian and vegan diets?",
-            answer: "Yes! Over 60% of our menu is vegetarian, including our Paneer Tikka Masala and Dal Makhani. We offer multiple vegan options and can prepare dishes without ghee upon request.",
-            category: "dietary",
-            voiceSnippet: "Yes, over sixty percent of our menu is vegetarian, with vegan options available."
-          },
-          {
-            question: "Do you offer a daily lunch buffet?",
-            answer: "We serve our grand Grand Indian Lunch Buffet daily from 11:30 AM to 2:30 PM. It features a rotating menu of regional tandoori, curries, and sweets.",
-            category: "hours",
-            voiceSnippet: "Our Grand Indian Lunch Buffet is served daily from eleven thirty AM to two thirty PM."
-          },
-          {
-            question: "What is your default spice level scaling?",
-            answer: "Our dishes are prepared according to four spice levels: Mild, Medium, Hot, and Indian Hot. Please specify your preference when ordering.",
-            category: "general",
-            voiceSnippet: "We offer four spice levels: Mild, Medium, Hot, and Indian Hot."
-          }
-        ]
-      } as unknown as T;
-    }
-
-    // 4. Check for Reviews (TIRDE Indian specific sentiment summaries)
-    if (lower.includes('review') || lower.includes('sentiment') || lower.includes('overall')) {
-      return {
-        overallSentiment: 0.88,
-        sentimentSummary: "Customers highly praise the authenticity of the Hyderabadi Biryani and the wide variety in the lunch buffet. A few reviews mention long queues during Sunday lunch rushes, but note the service is friendly.",
-        popularDishes: [
-          { dishName: "Hyderabadi Chicken Biryani", sentiment: "Positive", mentions: 22 },
-          { dishName: "Masala Dosa", sentiment: "Positive", mentions: 14 },
-          { dishName: "Paneer Butter Masala", sentiment: "Positive", mentions: 8 }
-        ],
-        ambienceTags: ["family-friendly", "lively", "aromatic"],
-        serviceInsights: "Service is prompt during the week, but wait times increase by 15 minutes during the Sunday buffet rush.",
-        topicClusters: [
-          { topic: "Authenticity", summary: "Strong praise for regional spices and traditional preparation." },
-          { topic: "Buffet Value", summary: "Excellent pricing for over 25 varieties of dishes." },
-          { topic: "Wait Times", summary: "Crowded on weekends. Early arrival recommended." }
-        ],
-        complaints: [
-          "Long wait times during the Sunday lunch buffet.",
-          "Parking lot gets full during weekday lunch hours."
-        ],
-        audienceProfile: {
-          families: "45%",
-          couples: "25%",
-          business: "20%",
-          solo: "10%"
-        }
-      } as unknown as T;
-    }
-
-    // 5. Fall back to Menu parsing (TIRDE Indian dishes)
-    if (lower.includes('menu') || lower.includes('dish') || lower.includes('price')) {
-      return {
-        sections: [
-          {
-            name: "Biryani & Rice",
-            description: "Aromatic slow-cooked basmati rice specials",
-            items: [
-              {
-                name: "Hyderabadi Chicken Biryani",
-                description: "Aromatic basmati rice cooked with marinated chicken, saffron, mint, and regional spices, served with raita.",
-                price: 16.50,
-                ingredients: ["Basmati Rice", "Chicken", "Yogurt", "Saffron", "Mint", "Spices"],
-                dietaryType: ["Halal"],
-                spiceLevel: "Hot",
-                allergens: ["Dairy"],
-                mealType: ["Lunch", "Dinner"],
-                popularityScore: 4.9
-              }
-            ]
-          },
-          {
-            name: "Vegetarian Specialties",
-            description: "Rich and creamy vegetarian delights",
-            items: [
-              {
-                name: "Paneer Butter Masala",
-                description: "Cubes of cottage cheese cooked in a rich, creamy tomato and cashew-nut gravy.",
-                price: 15.00,
-                ingredients: ["Paneer", "Tomato", "Cashew Nuts", "Butter", "Cream", "Spices"],
-                dietaryType: ["Vegetarian", "Gluten-Free"],
-                spiceLevel: "Medium",
-                allergens: ["Dairy", "Nuts"],
-                mealType: ["Lunch", "Dinner"],
-                popularityScore: 4.7
-              }
-            ]
-          }
-        ]
-      } as unknown as T;
-    }
-
-    // Default catch-all
-    return {
-      message: "Mock response generated",
-      originalPrompt: prompt
-    } as unknown as T;
+  private mockResponse<T>(): T {
+    return {} as T;
   }
 }
 

@@ -69,8 +69,8 @@ Guidelines:
 
       const chatOutput = await aiService.generateJSON<ChatResponse>(prompt, systemInstruction);
 
-      // Handle mock fallback checks
-      // In mock mode, ensure we populate logical citations matching the retrieved chunks
+      // Ensure citations are present even if the model response is terse.
+      // Rebuild from the retrieved chunks when the model omits them.
       if (!chatOutput.citations || chatOutput.citations.length === 0) {
         chatOutput.citations = matches.map(m => ({
           restaurantId: m.chunk.restaurantId,

@@ -32,6 +32,8 @@ export class RestaurantController {
     this.optimizeNames = this.optimizeNames.bind(this);
     this.optimizeLandmarks = this.optimizeLandmarks.bind(this);
     this.fetchAndSerializeDetails = this.fetchAndSerializeDetails.bind(this);
+    this.delete = this.delete.bind(this);
+    this.toggleDisable = this.toggleDisable.bind(this);
   }
 
   /**
@@ -305,6 +307,41 @@ export class RestaurantController {
       });
     } catch (error: any) {
       console.error('Failed to optimize landmarks:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Delete a restaurant (hard delete)
+   */
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const restaurant = await prisma.restaurant.findUnique({ where: { id } });
+      if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+      await prisma.restaurant.delete({ where: { id } });
+      return res.json({ success: true, message: 'Restaurant deleted' });
+    } catch (error: any) {
+      console.error('Failed to delete restaurant:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Toggle restaurant disabled status (for subscription expiry, admin actions)
+   */
+  async toggleDisable(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const restaurant = await prisma.restaurant.findUnique({ where: { id } });
+      if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+      const updated = await prisma.restaurant.update({
+        where: { id },
+        data: { disabled: !restaurant.disabled },
+      });
+      return res.json({ success: true, disabled: updated.disabled });
+    } catch (error: any) {
+      console.error('Failed to toggle restaurant status:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
   }

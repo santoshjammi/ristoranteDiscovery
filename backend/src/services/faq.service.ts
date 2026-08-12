@@ -54,7 +54,7 @@ Guidelines:
 
     const prompt = `Generate FAQs for the following restaurant context:\n\n${JSON.stringify(contextPayload, null, 2)}`;
 
-    return await aiService.generateJSON<FAQResult>(prompt, systemInstruction);
+    return await aiService.generateJSONLight<FAQResult>(prompt, systemInstruction);
   }
 }
 

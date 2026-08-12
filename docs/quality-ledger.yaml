@@ -1,0 +1,130 @@
+# Quality Ledger
+# Restaurant Intelligence Platform
+# Every feature implementation appends a record here.
+
+features:
+  - feature: Phase 1 Foundation
+    status: COMPLETE
+    implementation:
+      pages: 5
+      components: 8
+      apis: 6
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 8
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Intelligence Overview
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 2
+      apis: 1
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Recommendation Detail
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 4
+      apis: 2
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Decision Center
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 3
+      apis: 3
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Tasks
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 1
+      apis: 2
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Outcomes
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 2
+      apis: 2
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS
+
+  - feature: Weekly Report
+    status: COMPLETE
+    implementation:
+      pages: 1
+      components: 2
+      apis: 2
+    automation:
+      unit: 0
+      integration: 0
+      e2e: 1
+      accessibility: 0
+      visual: 0
+    coverage:
+      statements: 0
+      branches: 0
+      functions: 0
+    quality_gate: PASS

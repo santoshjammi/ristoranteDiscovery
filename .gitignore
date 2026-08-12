@@ -1,1 +1,35 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment & secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Build output
+backend/dist/
+frontend/.next/
+frontend/.next-prod/
+*.tsbuildinfo
+
+# Local runtime state
+backend/prisma/*.db
+backend/prisma/*.db-journal
+*.db
+*.sqlite
+
+# Package manager store
+.pnpm-store/
+
+# Test artifacts (Playwright)
+e2e/playwright-report/
+e2e/test-results/
+e2e/blob-report/
+e2e/playwright/.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

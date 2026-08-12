@@ -44,6 +44,8 @@ model Restaurant {
   competitiveVisibilityScore Int                @default(0)
   optimizationCompleteness   Int                @default(0)
   retrievalConfidence        Int                @default(0)
+  disabled                   Boolean            @default(false)
+  compositeScore             Int                @default(0)
 
   // Relations
   menuSections              MenuSection[]
@@ -52,6 +54,41 @@ model Restaurant {
   faqs                      FAQ[]
   schemas                   SEOMarkup[]
   vectorCaches              VectorCache[]
+  competitiveSets           CompetitiveSet[]
+  organizationLinks          OrganizationRestaurant[]
+  decisions                  Decision[]
+}
+
+model CompetitiveSet {
+  id           String   @id @default(uuid())
+  restaurantId String
+  status       String   @default("generated") // generated, stale
+  generatedAt  DateTime @default(now())
+
+  // Relations
+  restaurant   Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  competitors  Competitor[]
+
+  @@unique([restaurantId])
+}
+
+model Competitor {
+  id                String   @id @default(uuid())
+  competitiveSetId  String
+  competitorId      String   // References the competitor Restaurant's ID
+  name              String
+  distance          Float
+  cuisineSimilarity Float
+  priceTierMatch    Boolean
+  serviceModelMatch Boolean
+  overallScore      Int
+  scoreGaps         String   // JSON string: array of ScoreGap objects
+  createdAt         DateTime @default(now())
+
+  // Relations
+  competitiveSet    CompetitiveSet @relation(fields: [competitiveSetId], references: [id], onDelete: Cascade)
+
+  @@index([competitiveSetId])
 }
 
 model MenuSection {
@@ -149,4 +186,550 @@ model VectorCache {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId, entityType])
+}
+
+// ── Evidence Platform (KB-001) ──
+
+model EvidenceObservation {
+  id              String   @id
+  sourceId        String
+  sourceType      String
+  entityType      String
+  entityExternalId String
+  payload         String   // JSON string
+  observedAt      DateTime
+  metadata        String   @default("{}") // JSON string
+  ingestedAt      DateTime @default(now())
+
+  @@index([sourceId])
+  @@index([entityType, entityExternalId])
+}
+
+model EvidenceRecord {
+  id              String   @id
+  observationIds  String   // JSON array of observation IDs
+  sourceId        String
+  sourceType      String
+  entityType      String
+  entityId        String
+  payload         String   // JSON string
+  observedAt      DateTime
+  ingestedAt      DateTime
+  confidence      Float
+  checksum        String   @unique
+  status          String   @default("active") // active, superseded, expired
+
+  @@index([entityType, entityId])
+  @@index([checksum])
+}
+
+model EvidenceProvenance {
+  observationId       String   @id
+  sourceId            String
+  connectorVersion    String
+  parserVersion       String
+  normalizationVersion String
+  crawlId             String?
+  importJobId         String?
+  recordedAt          DateTime @default(now())
+
+  @@index([sourceId])
+}
+
+model EvidenceTimeline {
+  id              String   @id
+  entityType      String
+  entityId        String
+  eventType       String   // evidence-created, evidence-superseded, evidence-expired, assertion-created
+  evidenceId      String
+  observationId   String
+  sourceId         String
+  timestamp       DateTime
+  previousEventId String?
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+}
+
+// ── Knowledge Platform (KB-002 through KB-007) ──
+
+model KnowledgeAssertion {
+  id              String   @id
+  evidenceId      String
+  ruleName        String
+  ruleVersion     String
+  subject         String
+  predicate       String
+  object          String
+  confidence      Float
+  explanation     String
+  assertedAt      DateTime
+  status          String   @default("active") // active, superseded, invalidated
+
+  @@index([subject])
+  @@index([evidenceId])
+  @@index([predicate])
+}
+
+model KnowledgeFact {
+  id              String   @id
+  assertionIds    String   // JSON array
+  entityType      String
+  entityId        String
+  attribute       String
+  value           String   // JSON
+  confidence      Float
+  validFrom       DateTime
+  validTo         DateTime?
+  status          String   @default("current") // current, superseded, invalidated
+  version         Int      @default(1)
+
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, attribute])
+}
+
+model KnowledgeRelationship {
+  id                  String   @id
+  sourceEntityType    String
+  sourceEntityId      String
+  targetEntityType    String
+  targetEntityId      String
+  type                String
+  strength            Float
+  factIds             String   // JSON array
+  recordedAt          DateTime
+
+  @@index([sourceEntityType, sourceEntityId])
+  @@index([type])
+}
+
+model KnowledgeRecommendation {
+  id                    String   @id
+  restaurantId          String
+  category              String
+  title                 String
+  description           String
+  priority              Int
+  businessImpact        String
+  implementationEffort  String
+  factIds               String   // JSON array
+  assertionIds          String   // JSON array
+  evidenceIds           String   // JSON array
+  generatedAt           DateTime
+
+  @@index([restaurantId])
+  @@index([restaurantId, priority])
+}
+
+// ── Observation Platform (Gate C) ──
+
+model ObservationSource {
+  id              String   @id
+  name            String
+  type            String   // api, crawl, feed, manual, internal
+  description     String
+  status          String   @default("active") // active, paused, error, deprecated
+  reliability     Float    @default(1.0)
+  freshnessTTL    Int      @default(86400) // seconds
+  registeredAt    DateTime @default(now())
+  lastCrawlAt     DateTime?
+  lastErrorAt     DateTime?
+
+  @@index([type])
+  @@index([status])
+}
+
+model ObservationConnector {
+  id              String   @id
+  sourceId        String
+  name            String
+  type            String   // rest-api, graphql, web-scraper, rss-feed, file-import, webhook
+  version         String
+  config          String   // JSON
+  status          String   @default("active") // active, paused, error, deprecated
+  registeredAt    DateTime @default(now())
+  lastHealthCheckAt DateTime?
+  lastError       String?
+
+  @@index([sourceId])
+  @@index([type])
+}
+
+model ObservationCrawl {
+  id                    String   @id
+  sourceId              String
+  connectorId           String
+  type                  String   // full, incremental, webhook
+  status                String   @default("scheduled") // scheduled, running, completed, failed, cancelled
+  scheduledAt           DateTime @default(now())
+  startedAt             DateTime?
+  completedAt           DateTime?
+  observationsCollected Int      @default(0)
+  observationsNormalized Int     @default(0)
+  errors                String   @default("[]") // JSON array of CrawlError
+  duration              Int?     // milliseconds
+
+  @@index([sourceId])
+  @@index([status])
+}
+
+model ObservationIdentity {
+  id                String   @id
+  externalId        String
+  externalSource    String
+  internalEntityId  String
+  internalEntityType String
+  matchConfidence   Float
+  matchMethod       String   // exact, fuzzy, manual
+  matchedAt         DateTime @default(now())
+  evidenceIds       String   @default("[]") // JSON array
+
+  @@unique([externalId, externalSource])
+  @@index([internalEntityId])
+}
+
+model ObservationNormalizationRule {
+  id          String   @id
+  name        String   @unique
+  description String
+  sourceType  String
+  inputField  String
+  outputField String
+  transform   String   // lowercase, trim, map, parse-json, etc.
+  version     String
+  config      String   @default("{}") // JSON
+
+  @@index([sourceType])
+}
+
+model ObservationFreshness {
+  entityType          String
+  entityId            String
+  lastObservationAt   DateTime?
+  lastEvidenceAt      DateTime?
+  staleness           String   @default("expired") // fresh, aging, stale, expired
+  sources             String   @default("[]") // JSON array of SourceFreshness
+  checkedAt           DateTime @default(now())
+
+  @@id([entityType, entityId])
+  @@index([staleness])
+}
+
+// ── Product Engineering (Sprint 1) ──
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  avatarUrl      String?
+  emailVerified  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships    OrganizationMember[]
+  ownedOrganizations Organization[]
+}
+
+model Organization {
+  id             String   @id @default(uuid())
+  name           String
+  slug           String   @unique
+  ownerId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  owner          User                 @relation(fields: [ownerId], references: [id])
+  members        OrganizationMember[]
+  restaurants    OrganizationRestaurant[]
+  subscriptions  Subscription[]
+  settings       OrganizationSetting[]
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String   @default("admin") // admin, member, viewer
+  joinedAt       DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+model OrganizationRestaurant {
+  id             String   @id @default(uuid())
+  organizationId String
+  restaurantId   String
+  ownershipVerified Boolean @default(false)
+  addedAt        DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  restaurant     Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, restaurantId])
+}
+
+// ── Product Batch-02 ──
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String
+  priceMonthly Float
+  priceYearly  Float
+  maxRestaurants Int
+  maxMembers    Int
+  features     String  // JSON array
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  organizationId String   @unique
+  planId         String
+  status         String   @default("active") // active, past_due, canceled, expired
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean @default(false)
+  trialEndsAt    DateTime?
+  razorpayPaymentId String? // Razorpay payment ID after successful payment
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  organizationId String
+  amount         Float
+  currency       String   @default("USD")
+  status         String   // pending, paid, failed, refunded
+  dueAt          DateTime
+  paidAt         DateTime?
+  invoiceUrl     String?
+  createdAt      DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+model UsageRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  metric         String   // api_calls, analyses, restaurants, members
+  value          Int      @default(0)
+  periodStart    DateTime
+  periodEnd      DateTime
+  recordedAt     DateTime @default(now())
+
+  @@index([organizationId, metric, periodStart])
+}
+
+model TeamInvitation {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String
+  role           String   @default("member")
+  invitedBy      String
+  token          String   @unique
+  status         String   @default("pending") // pending, accepted, declined, expired
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+}
+
+// ── Connector definitions (platform types available in the system) ──
+model Connector {
+  id          String   @id @default(uuid())
+  type        String   @unique // gbp, zomato, swiggy, justdial, tripadvisor
+  label       String   // display name
+  status      String   @default("not_configured") // not_configured, connected, disconnected, error
+  credentials String?  // JSON (encrypted in prod)
+  config      String?  // JSON — per-connector settings
+  lastSyncAt  DateTime?
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ConnectorConfig {
+  id             String   @id @default(uuid())
+  organizationId String
+  type           String   // gbp, yelp, tripadvisor, zomato
+  label          String
+  credentials    String   // encrypted JSON
+  status         String   @default("disconnected") // disconnected, connected, error
+  lastSyncAt     DateTime?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, type])
+}
+
+model ConnectorSyncJob {
+  id             String   @id @default(uuid())
+  connectorId    String
+  status         String   @default("pending") // pending, running, completed, failed
+  startedAt      DateTime?
+  completedAt    DateTime?
+  itemsProcessed Int      @default(0)
+  itemsFailed    Int      @default(0)
+  errorLog       String?
+  createdAt      DateTime @default(now())
+}
+
+model ConnectorScorecardData {
+  id             String   @id @default(uuid())
+  restaurantId   String
+  factorId       String
+  score          Int
+  confidence     Float    @default(0.5)
+  evidence       String   @default("[]") // JSON array
+  syncedAt       DateTime @default(now())
+
+  @@unique([restaurantId, factorId])
+  @@index([restaurantId])
+}
+
+model InsightTemplate {
+  id          String   @id @default(uuid())
+  category    String   // menu, review, competitive, seo, market
+  title       String
+  description String
+  priority    Int      @default(3)
+  businessImpact String
+  effort      String   // low, medium, high
+  ruleName    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model OrganizationSetting {
+  id             String   @id @default(uuid())
+  organizationId String   @unique
+  branding       String   @default("{}") // JSON
+  notifications  String   @default("{}") // JSON
+  preferences    String   @default("{}") // JSON
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  description    String
+  enabled        Boolean  @default(false)
+  enabledOrgs    String   @default("[]") // JSON array of org IDs
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AdminAuditLog {
+  id             String   @id @default(uuid())
+  actorId        String
+  action         String
+  resourceType   String
+  resourceId     String
+  details        String   @default("{}") // JSON
+  ip             String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+}
+
+// ── RT-1: Decision, Outcome, Feedback ──
+
+model Analysis {
+  id             String   @id @default(uuid())
+  restaurantId   String
+  status         String   @default("pending") // pending, running, completed, failed
+  startedAt      DateTime?
+  completedAt    DateTime?
+  errorLog       String?
+  createdAt      DateTime @default(now())
+
+  @@index([restaurantId])
+}
+
+model Decision {
+  id              String   @id @default(uuid())
+  restaurantId    String
+  analysisId      String?
+  title           String
+  priority        Int      @default(3)
+  confidence      Float    @default(0.5)
+  businessImpact  String
+  effort          String   // low, medium, high
+  category        String   // menu, review, competitive, seo, market, general
+  observation     String
+  evidence        String   // JSON array of evidence references
+  reasoning       String   // JSON: engines, explanation
+  actionSteps     String   // JSON array
+  status          String   @default("pending") // pending, accepted, dismissed, completed, blocked
+  acceptedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  outcomes        Outcome[]
+
+  @@index([restaurantId, status])
+  @@index([category])
+}
+
+model Outcome {
+  id              String   @id @default(uuid())
+  decisionId      String
+  status          String   // completed, in_progress, blocked
+  effort          String?  // actual effort
+  perceivedImpact String?  // high, medium, low
+  beforeMetric    Float?
+  afterMetric     Float?
+  notes           String?
+  recordedAt      DateTime @default(now())
+
+  decision        Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id              String   @id @default(uuid())
+  decisionId      String?
+  restaurantId   String
+  type            String   // helpful, not_helpful, missing, incorrect, feature_request, satisfaction
+  rating          Int?
+  comment         String?
+  createdAt       DateTime @default(now())
+
+  @@index([decisionId])
+  @@index([restaurantId])
+}
+
+model ProductEvent {
+  id              String   @id @default(uuid())
+  eventType       String
+  organizationId  String?
+  restaurantId    String?
+  userId          String?
+  properties      String   @default("{}") // JSON
+  createdAt       DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
 }

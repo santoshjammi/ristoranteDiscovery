@@ -1,19 +1,37 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
 import apiRoutes from './routes/api.routes';
+import healthRoutes from './interfaces/routes/health.routes';
+import { requestLogger } from './interfaces/middleware/requestLogger';
+import { errorHandler } from './interfaces/middleware/errorHandler';
+import { loadConfig } from './lib/config';
+import { logger } from './lib/logger';
+import { seedDefaultAdmin, seedDefaultConnectors } from './lib/seed';
+import { aiService } from './services/ai.service';
 
 // Load environment variables
 dotenv.config();
+const config = loadConfig();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
 
-// Express Middlewares
-app.use(cors());
+// Trust proxy for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
+// Request logging
+app.use(requestLogger);
+
+// CORS
+app.use(cors({
+  origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
+  credentials: true,
+}));
+
+// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -24,29 +42,25 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
+// Mount health check routes (before API routes for liveness/readiness)
+app.use('/', healthRoutes);
+
 // Mount API routes
 app.use('/api', apiRoutes);
 
-// Basic Health Check Route
-app.get('/api/health', (req: Request, res: Response) => {
+// Central error handler (must be last middleware)
+app.use(errorHandler);
 
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'Restaurant Discovery Intelligence Backend'
+// Start Server (only when run directly, not when imported for testing)
+if (!process.env.VITEST) {
+  app.listen(config.port, async () => {
+    await seedDefaultAdmin();
+    await seedDefaultConnectors();
+    await aiService.init();
+    logger.info(`RDI Backend running on http://localhost:${config.port}`, {
+      metadata: { port: config.port, env: config.nodeEnv, version: config.appVersion },
+    });
   });
-});
+}
 
-// Central error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 RDI Backend running on http://localhost:${PORT}`);
-});
+export default app;
