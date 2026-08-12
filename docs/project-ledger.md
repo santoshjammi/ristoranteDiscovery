@@ -100,6 +100,43 @@
 
 ---
 
+## 🛑 MSP FREEZE POINT (Aug 2026)
+
+**Tag: `msp-baseline` (commit `98353c8`)** — Feature development is FROZEN.
+
+This tag is the line between *"we think customers need this"* and *"customers told us they need this."*
+Do NOT hand Hermes another product-development backlog.
+
+**Product complete at freeze:**
+25-factor scorecard · 5 business categories · evidence/confidence/freshness ·
+trends · benchmarking · portfolio + heat map · problem prioritization ·
+impact simulation · decision lifecycle · competitor comparison · evidence
+timeline · weekly intelligence · executive PDF · cross-factor relationships ·
+search/sort/filter · responsive/visual regression · builds/tests/E2E green.
+
+**Operating mode going forward — pilot loop:**
+`Restaurant → Audit → Conversation → Decision → Action → Outcome → Feedback`
+Goal: **10 pilot restaurants**, personally observed. Per restaurant capture:
+Acquisition → TTFV → Score viewed → Problem understood → Decision accepted →
+Action completed → Outcome observed → Would they pay?
+
+**Uncomfortable metric (not "do they like the dashboard"):**
+> "I didn't know this was a problem, and now I know what to do about it."
+Plus: **"Would you pay to keep monitoring this?"**
+
+**GTM wedge:** *Free Restaurant Intelligence Audit*
+`Audit → Score → Problems → Actions → Monitoring → Subscription`
+
+**Engineering exception (only these):**
+- P0: Pilot-blocking defect
+- P1: Customer cannot reach first value
+- P1: Score/evidence demonstrably wrong
+- P1: Customer cannot understand or act on the result
+- P1: Repeated request across pilot customers
+Everything else → backlog.
+
+---
+
 ## 📊 Platform Health
 
 | Metric | Value |
