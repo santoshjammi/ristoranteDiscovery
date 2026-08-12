@@ -57,6 +57,8 @@ model Restaurant {
   competitiveSets           CompetitiveSet[]
   organizationLinks          OrganizationRestaurant[]
   decisions                  Decision[]
+  scorecardSnapshots        ScorecardSnapshot[]
+  benchmarks                Benchmark[]
 }
 
 model CompetitiveSet {
@@ -732,4 +734,44 @@ model ProductEvent {
 
   @@index([eventType])
   @@index([createdAt])
+}
+
+// ── Intelligence Consumption Platform (Phase A) ──
+
+// ScorecardSnapshot — a point-in-time capture of a restaurant's full scorecard.
+// Enables 7/30/90-day/since-onboarding trends and "last scan" on the portfolio view.
+model ScorecardSnapshot {
+  id              String   @id @default(uuid())
+  restaurantId    String
+  overallScore    Int?
+  overallStatus   String?
+  categoryScores  String   @default("{}") // JSON: { categoryId: score }
+  factorScores    String   @default("{}") // JSON: { factorId: { score, status, confidence, evidenceCount } }
+  liveFactors     Int      @default(0)
+  pendingFactors  Int      @default(0)
+  capturedAt      DateTime @default(now())
+
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, capturedAt])
+}
+
+// Benchmark — per-factor aggregate across a dimension (city/cuisine/price/competitors).
+// Enables "Compared to…" on every factor.
+model Benchmark {
+  id          String   @id @default(uuid())
+  restaurantId String
+  factorId    String
+  dimension   String   // city | cuisine | price | competitors
+  dimensionValue String // e.g. "Mumbai", "Italian", "$$", "Top 5"
+  score       Int
+  p50         Int?
+  p75         Int?
+  p90         Int?
+  count       Int      @default(0)
+  computedAt  DateTime @default(now())
+
+  restaurant  Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, factorId, dimension])
 }

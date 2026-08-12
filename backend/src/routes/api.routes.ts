@@ -20,6 +20,7 @@ import auditRoutes from '../interfaces/routes/audit.routes';
 import subscriptionRoutes from '../interfaces/routes/subscription.routes';
 import scorecardRoutes from '../interfaces/routes/scorecard.routes';
 import connectorRoutes from '../interfaces/routes/connector.routes';
+import portfolioRoutes from '../interfaces/routes/portfolio.routes';
 
 const router = Router();
 
@@ -106,5 +107,8 @@ router.use('/', scorecardRoutes);
 
 // === Connector Platform Routes ===
 router.use('/connectors', connectorRoutes);
+
+// === Portfolio Routes (executive view) ===
+router.use('/portfolio', portfolioRoutes);
 
 export default router;
