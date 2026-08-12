@@ -8,6 +8,8 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { MasterScore, CategoryScoreStrip, ExpandableFactorCard, ProblemFactors, PendingFactors, type ScorecardData } from "@/components/scorecard/ScorecardComponents";
 import { TrendSection, type SnapshotHistory } from "@/components/scorecard/TrendChart";
 import { BenchmarkBar, type BenchmarkResult, type BenchmarkDimension } from "@/components/scorecard/BenchmarkBar";
+import { EvidenceTimeline, type TimelineEvent } from "@/components/scorecard/EvidenceTimeline";
+import { ImpactSimulator, type ImpactSimulation } from "@/components/scorecard/ImpactSimulator";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
@@ -26,6 +28,8 @@ function ScorecardPage() {
   const [historyRange, setHistoryRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([]);
   const [benchmarkDim, setBenchmarkDim] = useState<BenchmarkDimension>("city");
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+  const [impacts, setImpacts] = useState<ImpactSimulation[]>([]);
 
   const fetchScorecard = async () => {
     if (!token || !params.id) return;
@@ -71,9 +75,56 @@ function ScorecardPage() {
     } catch {}
   };
 
+  const fetchTimeline = async () => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/timeline`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTimeline(data.data?.events || []);
+      }
+    } catch {}
+  };
+
+  const fetchImpacts = async () => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/impact`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setImpacts(data.data || []);
+      }
+    } catch {}
+  };
+
+  const downloadPDF = async () => {
+    if (!token || !params.id) return;
+    try {
+      const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `intelligence-${scorecard?.restaurantName || params.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`PDF download failed: ${err.message}`);
+    }
+  };
+
   useEffect(() => { fetchScorecard(); }, [token, params.id]);
   useEffect(() => { fetchHistory(historyRange); }, [token, params.id, historyRange]);
   useEffect(() => { fetchBenchmarks(benchmarkDim); }, [token, params.id, benchmarkDim]);
+  useEffect(() => { fetchTimeline(); }, [token, params.id]);
+  useEffect(() => { fetchImpacts(); }, [token, params.id]);
 
   if (loading) {
     return (
@@ -123,10 +174,15 @@ function ScorecardPage() {
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto" }}>
       {/* Breadcrumb */}
-      <div style={{ display: "flex", alignItems: "center", gap: spacing.sm, marginBottom: spacing.lg }}>
-        <button onClick={() => router.push("/dashboard/restaurants")} style={{ background: "none", border: "none", color: colors.muted, cursor: "pointer", fontSize: "0.8125rem", padding: 0 }}>Restaurants</button>
-        <span style={{ color: colors.mutedDarker, fontSize: "0.75rem" }}>/</span>
-        <span style={{ fontSize: "0.8125rem", color: colors.text, fontWeight: 500 }}>{scorecard.restaurantName}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
+        <div style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
+          <button onClick={() => router.push("/dashboard/restaurants")} style={{ background: "none", border: "none", color: colors.muted, cursor: "pointer", fontSize: "0.8125rem", padding: 0 }}>Restaurants</button>
+          <span style={{ color: colors.mutedDarker, fontSize: "0.75rem" }}>/</span>
+          <span style={{ fontSize: "0.8125rem", color: colors.text, fontWeight: 500 }}>{scorecard.restaurantName}</span>
+        </div>
+        <button onClick={downloadPDF} style={{ padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.md, border: `1px solid ${colors.primary}`, background: colors.primaryLight, color: colors.primary, fontWeight: 600, cursor: "pointer", fontSize: "0.8125rem" }}>
+          ⬇ Download PDF
+        </button>
       </div>
 
       {/* 1. Overall Restaurant Intelligence Score */}
@@ -246,6 +302,16 @@ function ScorecardPage() {
       {/* 5. Top problem factors */}
       <div style={{ marginTop: spacing["2xl"] }}>
         <ProblemFactors factors={allFactors} onSelect={(id) => setSelectedFactor(id)} />
+      </div>
+
+      {/* 5b. Evidence timeline */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <EvidenceTimeline events={timeline} />
+      </div>
+
+      {/* 5c. Impact simulation */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <ImpactSimulator impacts={impacts} />
       </div>
 
       {/* 6. Pending Observation factors clearly separated */}

@@ -12,6 +12,7 @@ import { WeeklySummaryService } from '../../application/summary/WeeklySummarySer
 import { NotificationService } from '../../application/notifications/NotificationService';
 import { authMiddleware } from '../middleware/auth';
 import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
+import { generateWeeklyIntelligence } from '../../application/summary/WeeklyIntelligenceService';
 
 const prisma = new PrismaClient();
 const analysis = new AnalysisService(prisma);
@@ -63,6 +64,11 @@ router.get('/decisions/:id/notes', authMiddleware, async (req: Request, res: Res
 // ── Phase 8: Return — Weekly Summary ──
 router.get('/restaurants/:id/summary', authMiddleware, async (req: Request, res: Response) => {
   res.json({ data: await summary.generate(req.params.id) });
+});
+
+// ── Phase 8: Return — Weekly Intelligence (what changed/improved/worsened/next) ──
+router.get('/restaurants/:id/weekly-intelligence', authMiddleware, async (req: Request, res: Response) => {
+  res.json({ data: await generateWeeklyIntelligence(req.params.id) });
 });
 
 // ── Phase 8: Return — Notifications ──

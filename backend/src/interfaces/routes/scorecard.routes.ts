@@ -2,6 +2,9 @@ import { Router, Request, Response } from 'express';
 import { getScorecard } from '../../domain/scorecard/ScorecardService';
 import { captureSnapshot, getSnapshotHistory } from '../../domain/scorecard/ScorecardSnapshotService';
 import { computeBenchmarks, getBenchmarks, latestBenchmarkTime, type BenchmarkDimension } from '../../domain/scorecard/BenchmarkService';
+import { getEvidenceTimeline } from '../../domain/scorecard/EvidenceTimelineService';
+import { simulateImpact, simulateAllImpacts } from '../../domain/scorecard/ImpactSimulationService';
+import { generateExecutivePDF } from '../../application/reporting/ExecutivePDFService';
 
 const router = Router();
 
@@ -44,6 +47,38 @@ router.get('/restaurants/:id/benchmarks', async (req: Request, res: Response) =>
     await computeBenchmarks(req.params.id);
     const benchmarks = await getBenchmarks(req.params.id, dimension);
     res.json({ data: benchmarks });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/restaurants/:id/scorecard/timeline — evidence timeline
+router.get('/restaurants/:id/scorecard/timeline', async (req: Request, res: Response) => {
+  try {
+    const timeline = await getEvidenceTimeline(req.params.id);
+    res.json({ data: timeline });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/restaurants/:id/scorecard/impact — all factor impact simulations
+router.get('/restaurants/:id/scorecard/impact', async (req: Request, res: Response) => {
+  try {
+    const impacts = await simulateAllImpacts(req.params.id);
+    res.json({ data: impacts });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/restaurants/:id/scorecard/pdf — executive PDF report
+router.get('/restaurants/:id/scorecard/pdf', async (req: Request, res: Response) => {
+  try {
+    const pdf = await generateExecutivePDF(req.params.id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="intelligence-${req.params.id}.pdf"`);
+    res.send(Buffer.from(pdf));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
