@@ -4,6 +4,37 @@ import {
   type FactorScore, type CategoryScore, type Scorecard, type FactorStatus, type SubSignal,
 } from './types';
 
+/**
+ * Determine whether a string column holds REAL, non-empty content.
+ * An empty, whitespace-only, or empty JSON array/object literal ('[]' / '{}')
+ * counts as ABSENT — presence requires at least one non-empty trimmed item.
+ * Values starting with '[' are parsed as JSON arrays, '{' as JSON objects;
+ * otherwise the value is treated as a comma-separated list or a plain string.
+ */
+function hasRealContent(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+
+  if (trimmed.startsWith('[')) {
+    try {
+      const arr = JSON.parse(trimmed);
+      return Array.isArray(arr) && arr.some((item) => typeof item === 'string' && item.trim().length > 0);
+    } catch {
+      return false;
+    }
+  }
+  if (trimmed.startsWith('{')) {
+    try {
+      const obj = JSON.parse(trimmed);
+      return typeof obj === 'object' && obj !== null && Object.keys(obj).length > 0;
+    } catch {
+      return false;
+    }
+  }
+  return trimmed.split(',').some((item) => item.trim().length > 0);
+}
+
 function computeStatus(score: number | null): FactorStatus {
   if (score === null) return 'pending_observation';
   if (score >= 80) return 'excellent';
@@ -28,16 +59,73 @@ interface SignalScore {
 }
 
 /**
+ * Which real, user/analysis-derived data dimensions exist for a restaurant.
+ * A freshly-created restaurant with no real evidence has NONE of these set —
+ * its score columns are still at Prisma defaults (0 or 70) and no related
+ * rows exist — so it must report all factors as Pending Observation.
+ */
+interface EvidencePresence {
+  /** MenuItem rows exist (real menu data ingested). */
+  hasMenuData: boolean;
+  /** ReviewAnalysis rows exist (real review/sentiment analysis). */
+  hasReviewData: boolean;
+  /** FAQ rows exist (real Q&A data). */
+  hasFaqData: boolean;
+  /** SEOMarkup rows exist (real structured-schema output). */
+  hasSchemaData: boolean;
+  /** Any of the above relational data exists for the restaurant. */
+  hasAnyData: boolean;
+}
+
+/**
+ * Prisma default values for each discoverability score column.
+ * A column sitting exactly at its default is NOT a measured score — it is the
+ * un-populated schema default. We must never surface it as live on a bare row.
+ */
+const SCORE_COLUMN_DEFAULTS: Record<string, number> = {
+  gbpHealthScore: 70,
+  localSearchScore: 0,
+  aiVisibilityScore: 0,
+  menuDiscoverabilityScore: 0,
+  conversationalSearchScore: 0,
+  restaurantClarityScore: 0,
+  discoverabilityScore: 0,
+};
+
+/**
+ * Determine whether a score column reflects REAL measurement rather than the
+ * Prisma default. A column is considered genuinely populated when it differs
+ * from its schema default OR there is real supporting evidence present
+ * (`evidenceLive`). A bare row with all columns at defaults and no evidence
+ * yields null (Pending Observation) — never a fabricated score.
+ */
+function columnIsLive(r: any, column: string, evidenceLive: boolean): boolean {
+  const def = SCORE_COLUMN_DEFAULTS[column];
+  const val = r[column];
+  if (typeof val !== 'number') return false;
+  if (val !== def) return true;
+  return evidenceLive;
+}
+
+/**
  * Resolve a single source signal's score.
  * Connector data takes priority; DB fallback provides hardcoded mappings for
  * signals not yet fed by a connector. `requiresEvidence` signals never use the
  * DB fallback — they stay pending until a connector/evidence source provides a score.
+ *
+ * Pending-state honesty (RIST-RDI-002): the DB fallback must never treat a
+ * Prisma default-0/default-70 column as a measured score. A score column only
+ * surfaces a live value when it is genuinely populated (non-default) or the
+ * restaurant has real supporting evidence. Presence-based signals
+ * (address, cuisine, phone/website) stay live because they derive from real
+ * user-entered data.
  */
 function resolveSignalScore(
   signalId: string,
   connectorMap: Map<string, { score: number; confidence: number | null; evidence: string[] }>,
   r: any,
   requiresEvidence: boolean,
+  presence: EvidencePresence,
 ): SignalScore {
   const cd = connectorMap.get(signalId);
   if (cd) {
@@ -54,43 +142,56 @@ function resolveSignalScore(
     return { score: null, trend: null, confidence: null, evidence: [] };
   }
 
+  // Compute the per-column "genuinely live" gate for this row's evidence.
+  const gbpLive = columnIsLive(r, 'gbpHealthScore', presence.hasReviewData);
+  const lsLive = columnIsLive(r, 'localSearchScore', presence.hasAnyData);
+  const aiLive = columnIsLive(r, 'aiVisibilityScore', presence.hasAnyData);
+  const menuLive = columnIsLive(r, 'menuDiscoverabilityScore', presence.hasMenuData);
+  const convLive = columnIsLive(r, 'conversationalSearchScore', presence.hasAnyData);
+  const clarityLive = columnIsLive(r, 'restaurantClarityScore', presence.hasAnyData);
+  const discoLive = columnIsLive(r, 'discoverabilityScore', presence.hasAnyData);
+
+  // Helper: surface the column value only when genuinely live.
+  const live = (col: string, isLive: boolean): number | null =>
+    isLive ? r[col] : null;
+
   switch (signalId) {
-    case 'gbp_profile':           return { score: r.gbpHealthScore, trend: 'stable', confidence: 85, evidence: ['GBP profile completeness'] };
-    case 'maps_presence':         return { score: r.localSearchScore, trend: 'up', confidence: 80, evidence: ['Google Maps presence'] };
+    case 'gbp_profile':           return { score: live('gbpHealthScore', gbpLive), trend: 'stable', confidence: 85, evidence: gbpLive ? ['GBP profile completeness'] : [] };
+    case 'maps_presence':         return { score: live('localSearchScore', lsLive), trend: 'up', confidence: 80, evidence: lsLive ? ['Google Maps presence'] : [] };
     case 'local_search':
-    case 'local_search_score':    return { score: r.localSearchScore, trend: 'up', confidence: 88, evidence: ['Local search ranking'] };
-    case 'business_categories':   return { score: r.cuisineTypes ? 65 : null, trend: 'stable', confidence: 75, evidence: r.cuisineTypes ? ['Business categories set'] : [] };
-    case 'location_accuracy':     return { score: r.address ? 70 : null, trend: 'stable', confidence: 90, evidence: r.address ? ['Location verified'] : [] };
+    case 'local_search_score':    return { score: live('localSearchScore', lsLive), trend: 'up', confidence: 88, evidence: lsLive ? ['Local search ranking'] : [] };
+    case 'business_categories':   return { score: hasRealContent(r.cuisineTypes) ? 65 : null, trend: 'stable', confidence: 75, evidence: hasRealContent(r.cuisineTypes) ? ['Business categories set'] : [] };
+    case 'location_accuracy':     return { score: hasRealContent(r.address) ? 70 : null, trend: 'stable', confidence: 90, evidence: hasRealContent(r.address) ? ['Location verified'] : [] };
     case 'delivery_platforms':    return { score: null, trend: null, confidence: null, evidence: [] };
 
-    case 'avg_rating':            return { score: r.gbpHealthScore, trend: 'stable', confidence: 70, evidence: [] };
-    case 'review_volume':         return { score: r.gbpHealthScore, trend: 'up', confidence: 65, evidence: [] };
+    case 'avg_rating':            return { score: live('gbpHealthScore', gbpLive), trend: 'stable', confidence: 70, evidence: [] };
+    case 'review_volume':         return { score: live('gbpHealthScore', gbpLive), trend: 'up', confidence: 65, evidence: [] };
     case 'review_freshness':      return { score: null, trend: null, confidence: null, evidence: [] };
     case 'review_response':       return { score: null, trend: null, confidence: null, evidence: [] };
     case 'sentiment':             return { score: null, trend: null, confidence: null, evidence: [] };
     case 'social_presence':       return { score: null, trend: null, confidence: null, evidence: [] };
-    case 'business_trust':        return { score: r.gbpHealthScore, trend: 'up', confidence: 72, evidence: ['Trust signals present'] };
+    case 'business_trust':        return { score: live('gbpHealthScore', gbpLive), trend: 'up', confidence: 72, evidence: gbpLive ? ['Trust signals present'] : [] };
 
     case 'website_health':
-    case 'website_performance':   return { score: r.aiVisibilityScore, trend: 'up', confidence: 82, evidence: ['Website health checks'] };
-    case 'mobile_experience':     return { score: r.aiVisibilityScore, trend: 'stable', confidence: 78, evidence: ['Mobile experience'] };
+    case 'website_performance':   return { score: live('aiVisibilityScore', aiLive), trend: 'up', confidence: 82, evidence: aiLive ? ['Website health checks'] : [] };
+    case 'mobile_experience':     return { score: live('aiVisibilityScore', aiLive), trend: 'stable', confidence: 78, evidence: aiLive ? ['Mobile experience'] : [] };
     case 'menu_availability':
     case 'menu_quality':
-    case 'menu_publishing':       return { score: r.menuDiscoverabilityScore, trend: 'up', confidence: 85, evidence: ['Menu availability'] };
-    case 'online_ordering':       return { score: r.conversationalSearchScore, trend: 'stable', confidence: 70, evidence: ['Online ordering'] };
+    case 'menu_publishing':       return { score: live('menuDiscoverabilityScore', menuLive), trend: 'up', confidence: 85, evidence: menuLive ? ['Menu availability'] : [] };
+    case 'online_ordering':       return { score: live('conversationalSearchScore', convLive), trend: 'stable', confidence: 70, evidence: convLive ? ['Online ordering'] : [] };
     case 'reservations':          return { score: null, trend: null, confidence: null, evidence: [] };
 
     case 'business_completeness':
-    case 'restaurant_clarity':    return { score: r.restaurantClarityScore, trend: 'up', confidence: 92, evidence: ['Business completeness'] };
-    case 'opening_hours':         return { score: r.restaurantClarityScore, trend: 'stable', confidence: 95, evidence: ['Opening hours verified'] };
-    case 'contact_info':          return { score: (r.phone || r.website) ? 75 : null, trend: 'stable', confidence: 90, evidence: r.phone ? ['Phone on file'] : (r.website ? ['Website on file'] : []) };
-    case 'photos_media':          return { score: r.menuDiscoverabilityScore, trend: 'stable', confidence: 60, evidence: [] };
+    case 'restaurant_clarity':    return { score: live('restaurantClarityScore', clarityLive), trend: 'up', confidence: 92, evidence: clarityLive ? ['Business completeness'] : [] };
+    case 'opening_hours':         return { score: live('restaurantClarityScore', clarityLive), trend: 'stable', confidence: 95, evidence: clarityLive ? ['Opening hours verified'] : [] };
+    case 'contact_info':          return { score: (hasRealContent(r.phone) || hasRealContent(r.website)) ? 75 : null, trend: 'stable', confidence: 90, evidence: hasRealContent(r.phone) ? ['Phone on file'] : (hasRealContent(r.website) ? ['Website on file'] : []) };
+    case 'photos_media':          return { score: live('menuDiscoverabilityScore', menuLive), trend: 'stable', confidence: 60, evidence: [] };
     case 'local_citations':       return { score: null, trend: null, confidence: null, evidence: [] };
 
-    case 'competitive_position':  return { score: r.discoverabilityScore, trend: 'up', confidence: 75, evidence: ['Competitive benchmark'] };
-    case 'local_authority':       return { score: r.localSearchScore, trend: 'stable', confidence: 70, evidence: ['Local authority signals'] };
-    case 'visibility_trend':      return { score: r.discoverabilityScore, trend: 'up', confidence: 85, evidence: ['Visibility trend'] };
-    case 'growth_opportunity':    return { score: r.discoverabilityScore, trend: 'up', confidence: 65, evidence: ['Growth opportunity analysis'] };
+    case 'competitive_position':  return { score: live('discoverabilityScore', discoLive), trend: 'up', confidence: 75, evidence: discoLive ? ['Competitive benchmark'] : [] };
+    case 'local_authority':       return { score: live('localSearchScore', lsLive), trend: 'stable', confidence: 70, evidence: lsLive ? ['Local authority signals'] : [] };
+    case 'visibility_trend':      return { score: live('discoverabilityScore', discoLive), trend: 'up', confidence: 85, evidence: discoLive ? ['Visibility trend'] : [] };
+    case 'growth_opportunity':    return { score: live('discoverabilityScore', discoLive), trend: 'up', confidence: 65, evidence: discoLive ? ['Growth opportunity analysis'] : [] };
     case 'customer_engagement':   return { score: null, trend: null, confidence: null, evidence: [] };
 
     default:                      return { score: null, trend: null, confidence: null, evidence: [] };
@@ -116,6 +217,24 @@ export async function getScorecard(restaurantId: string, _token: string): Promis
     ]),
   );
 
+  // Real-data presence detection (RIST-RDI-002 pending-state honesty).
+  // Distinguish a freshly-created bare row (score columns at Prisma defaults,
+  // no related rows) from a restaurant with genuinely ingested data, so the
+  // DB fallback never fabricates scores from default-0/default-70 columns.
+  const [menuCount, reviewCount, faqCount, schemaCount] = await Promise.all([
+    prisma.menuItem.count({ where: { restaurantId } }),
+    prisma.reviewAnalysis.count({ where: { restaurantId } }),
+    prisma.fAQ.count({ where: { restaurantId } }),
+    prisma.sEOMarkup.count({ where: { restaurantId } }),
+  ]);
+  const presence: EvidencePresence = {
+    hasMenuData: menuCount > 0,
+    hasReviewData: reviewCount > 0,
+    hasFaqData: faqCount > 0,
+    hasSchemaData: schemaCount > 0,
+    hasAnyData: menuCount > 0 || reviewCount > 0 || faqCount > 0 || schemaCount > 0,
+  };
+
   // Build the 25 factor scores, each with its sub-signals.
   const factorScores: FactorScore[] = FACTORS.map((def) => {
     const requiresEvidence = !!def.requiresEvidence;
@@ -125,7 +244,7 @@ export async function getScorecard(restaurantId: string, _token: string): Promis
 
     // Compute sub-signals (merged v1.0 factors preserved as evidence).
     const subSignals: SubSignal[] = def.subSignals.map((ss) => {
-      const src = resolveSignalScore(ss.id, connectorMap, r, requiresEvidence);
+      const src = resolveSignalScore(ss.id, connectorMap, r, requiresEvidence, presence);
       return {
         id: ss.id,
         name: ss.name,
@@ -136,7 +255,7 @@ export async function getScorecard(restaurantId: string, _token: string): Promis
     });
 
     // Direct source for the factor's own id (e.g. sentiment, delivery_platforms).
-    const own = resolveSignalScore(def.id, connectorMap, r, requiresEvidence);
+    const own = resolveSignalScore(def.id, connectorMap, r, requiresEvidence, presence);
 
     // Sub-signal scores that are live.
     const liveSubScores = subSignals
