@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { vectorService } from '../services/vector.service';
-import { aiService } from '../services/ai.service';
+import { conversationCapability } from '../infrastructure/ai/capabilities/ConversationCapability';
 import { seoOptimizerService } from '../services/seo-optimizer.service';
 
 export interface ChatResponse {
@@ -15,20 +15,50 @@ export interface ChatResponse {
   }>;
 }
 
+/** Build a deterministic citation from a retrieved chunk (all in-scope). */
+function citationFromChunk(match: { chunk: any }): ChatResponse['citations'][number] {
+  const c = match.chunk;
+  return {
+    restaurantId: c.restaurantId,
+    restaurantName: c.restaurant?.name ?? '',
+    entityType: c.entityType,
+    entityName: c.entityType === 'menuItem' ? c.textChunk.split('Dish name: ')[1]?.split(' (')[0] || 'Dish' : 'Details',
+    details: c.entityType === 'menuItem' ? '$' + c.textChunk.split('($')[1]?.split(')')[0] || 'Item' : 'Info',
+  };
+}
+
 export class SearchController {
   /**
    * Conversational RAG Search: Vector retrieval + LLM synthesis
+   *
+   * Authorization: requires an authenticated user (authMiddleware). Retrieval
+   * is scoped to the restaurant IDs the user is authorized to access, and the
+   * deterministic evidence allow-list is passed into the capability so AI
+   * citations cannot be fabricated.
    */
   async chat(req: Request, res: Response) {
     try {
+      const userId = (req as any).userId;
       const { query } = req.body;
 
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ error: 'Search query is required as a string.' });
       }
 
-      // 1. Semantic retrieval of top 4 matching chunks
-      const matches = await vectorService.searchSemantic(query, 4);
+      // Retrieve the deterministic set of restaurant IDs this user may access.
+      const authorizedIds = await vectorService.resolveAuthorizedRestaurantIds(userId);
+
+      // A user with no restaurant membership/org links has NO authorized scope.
+      // Return an empty result rather than falling back to an unscoped query.
+      if (authorizedIds.size === 0) {
+        return res.json({
+          answer: "I couldn't find any restaurants matching your query in the discovery index.",
+          citations: []
+        });
+      }
+
+      // 1. Semantic retrieval of top 4 matching chunks, restricted to scope.
+      const matches = await vectorService.searchSemantic(query, 4, authorizedIds);
 
       if (matches.length === 0) {
         return res.json({
@@ -42,44 +72,44 @@ export class SearchController {
         return `[Chunk #${idx + 1}] Entity Type: ${match.chunk.entityType} (ID: ${match.chunk.entityId}) belonging to Restaurant "${match.chunk.restaurant.name}" (ID: ${match.chunk.restaurantId}). Content: ${match.chunk.textChunk}`;
       }).join('\n\n');
 
-      const systemInstruction = `
-You are the RDI conversational restaurant assistant. Your job is to answer customer dining search queries using ONLY the retrieved context chunks.
+      // Evidence allow-list derived from deterministic retrieval — the only
+      // references the AI may cite. The model never determines scope.
+      const retrievedEvidence = matches.map((m) => ({
+        restaurantId: m.chunk.restaurantId,
+        entityId: m.chunk.entityId,
+        entityType: m.chunk.entityType,
+      }));
 
-Provide a highly helpful, premium, and friendly recommendation response matching this JSON structure:
-{
-  "answer": "A clear, descriptive response summarizing matching restaurants, specific dishes, prices, and vibe elements mentioned. Be concise and write in a natural conversational tone.",
-  "citations": [
-    {
-      "restaurantId": "ID of the restaurant cited",
-      "restaurantName": "Name of the restaurant cited",
-      "entityType": "menuItem", // "menuItem", "faq", "restaurant", or "reviewTopic"
-      "entityName": "Specific name of the dish or FAQ question cited",
-      "details": "$24.00" // Specific detail, e.g. price for menuItems, voiceSnippet for FAQs, sentiment for reviews
-    }
-  ]
-}
+      // AI synthesis of the conversational answer via the ConversationCapability.
+      // Deterministic retrieval (above) stays in this controller; AI never owns it.
+      const synthesis = await conversationCapability.converse({
+        query,
+        contextString,
+        retrievedEvidence,
+      });
 
-Guidelines:
-1. Do not make up facts. Only reference details present in the context.
-2. If a dish price is present in the chunk, include it in both the answer and the citations array.
-3. Be friendly and conversational, as if speaking to someone looking for dining recommendations.
-`;
-
-      const prompt = `Customer search query: "${query}"\n\nRetrieved Context Chunks:\n${contextString}`;
-
-      const chatOutput = await aiService.generateJSON<ChatResponse>(prompt, systemInstruction);
-
-      // Ensure citations are present even if the model response is terse.
-      // Rebuild from the retrieved chunks when the model omits them.
-      if (!chatOutput.citations || chatOutput.citations.length === 0) {
-        chatOutput.citations = matches.map(m => ({
-          restaurantId: m.chunk.restaurantId,
-          restaurantName: m.chunk.restaurant.name,
-          entityType: m.chunk.entityType,
-          entityName: m.chunk.entityType === 'menuItem' ? m.chunk.textChunk.split('Dish name: ')[1]?.split(' (')[0] || 'Dish' : 'Details',
-          details: m.chunk.entityType === 'menuItem' ? '$' + m.chunk.textChunk.split('($')[1]?.split(')')[0] || 'Item' : 'Info'
-        }));
+      if (!synthesis.ok) {
+        console.warn(
+          `⚠️ [RAG chat] conversation capability failed (${synthesis.failure.kind}: ${synthesis.failure.message}); returning deterministic fallback.`,
+        );
+        return res.json({
+          answer: "I couldn't synthesize a recommendation right now, but here are the most relevant matches I found.",
+          citations: matches.map(citationFromChunk)
+        });
       }
+
+      // Grounding already removed any hallucinated citations inside the
+      // capability. If none survive grounding, fall back to deterministic
+      // citations rebuilt from retrieved chunks (which are all in-scope).
+      let citations = synthesis.data.citations ?? [];
+      if (citations.length === 0) {
+        citations = matches.map(citationFromChunk);
+      }
+
+      const chatOutput: ChatResponse = {
+        answer: synthesis.data.answer,
+        citations,
+      };
 
       return res.json(chatOutput);
     } catch (error: any) {
@@ -89,16 +119,22 @@ Guidelines:
   }
 
   /**
-   * Standard semantic search endpoint returning raw chunks and similarity scores
+   * Standard semantic search endpoint returning raw chunks and similarity scores.
+   * Scoped to the authenticated user's authorized restaurants.
    */
   async recommend(req: Request, res: Response) {
     try {
+      const userId = (req as any).userId;
       const query = (req.query.q as string) || '';
       if (!query) {
         return res.status(400).json({ error: 'Query parameter q is required.' });
       }
 
-      const results = await vectorService.searchSemantic(query, 6);
+      const authorizedIds = await vectorService.resolveAuthorizedRestaurantIds(userId);
+      if (authorizedIds.size === 0) {
+        return res.json([]);
+      }
+      const results = await vectorService.searchSemantic(query, 6, authorizedIds);
       return res.json(results);
     } catch (error: any) {
       console.error('Semantic recommendation failed:', error);
@@ -163,13 +199,21 @@ Guidelines:
   }
 
   /**
-   * Explicit endpoint to build/refresh vector index for a restaurant
+   * Explicit endpoint to build/refresh vector index for a restaurant.
+   * Now protected by authMiddleware; scopes the target restaurant to the
+   * authorized set before indexing.
    */
   async buildIndex(req: Request, res: Response) {
     try {
+      const userId = (req as any).userId;
       const { restaurantId } = req.body;
       if (!restaurantId) {
         return res.status(400).json({ error: 'restaurantId is required' });
+      }
+
+      const authorizedIds = await vectorService.resolveAuthorizedRestaurantIds(userId);
+      if (!authorizedIds.has(restaurantId)) {
+        return res.status(403).json({ error: 'Not authorized to index this restaurant' });
       }
 
       const chunkCount = await vectorService.indexRestaurant(restaurantId);

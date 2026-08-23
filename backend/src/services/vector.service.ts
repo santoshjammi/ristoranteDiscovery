@@ -1,5 +1,4 @@
 import prisma from '../config/db';
-import { aiService } from './ai.service';
 
 export interface ChunkNode {
   restaurantId: string;
@@ -155,15 +154,32 @@ export class VectorService {
   }
 
   /**
-   * Search for top K matching chunks across all restaurants
+   * Search for top K matching chunks.
+   *
+   * Retrieval isolation: when `allowedRestaurantIds` is provided, ONLY chunks
+   * belonging to those restaurants are considered. This prevents a query from
+   * leaking another restaurant's evidence. The caller (controller) derives the
+   * allow-set from the authenticated user's authorized restaurants; the model
+   * never determines scope.
    */
-  async searchSemantic(query: string, topK: number = 3): Promise<Array<{
+  async searchSemantic(
+    query: string,
+    topK: number = 3,
+    allowedRestaurantIds?: Set<string>,
+  ): Promise<Array<{
     chunk: any;
     similarity: number;
   }>> {
     const queryEmbedding = await this.getEmbedding(query);
+
+    // Tenant/restaurant isolation filter applied at the DB query level so a
+    // scoped caller can never see chunks from outside its authorization set.
     const allCaches = await prisma.vectorCache.findMany({
-      include: { restaurant: true }
+      include: { restaurant: true },
+      where:
+        allowedRestaurantIds && allowedRestaurantIds.size > 0
+          ? { restaurantId: { in: Array.from(allowedRestaurantIds) } }
+          : undefined,
     });
 
     const results = allCaches.map(cache => {
@@ -179,6 +195,26 @@ export class VectorService {
       .filter(r => r.similarity > 0.05)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, topK);
+  }
+
+  /**
+   * Resolve the restaurant IDs the authenticated user is authorized to access,
+   * via the existing membership model (restaurantMember + organizationRestaurant).
+   * The model never determines scope — this is the deterministic boundary.
+   */
+  async resolveAuthorizedRestaurantIds(userId: string): Promise<Set<string>> {
+    const [memberLinks, orgLinks] = await Promise.all([
+      prisma.restaurantMember.findMany({ where: { userId }, select: { restaurantId: true } }),
+      prisma.organizationRestaurant.findMany({
+        where: { organization: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] } },
+        select: { restaurantId: true },
+      }),
+    ]);
+
+    const ids = new Set<string>();
+    for (const m of memberLinks) ids.add(m.restaurantId);
+    for (const o of orgLinks) ids.add(o.restaurantId);
+    return ids;
   }
 }
 

@@ -29,8 +29,8 @@ export class MenuController {
         return res.status(404).json({ error: 'Restaurant not found' });
       }
 
-      // Parse the PDF buffer
-      const parsedMenu = await parserService.parsePDFMenu(file.buffer);
+      // Parse the PDF buffer (source provenance = original uploaded filename)
+      const parsedMenu = await parserService.parsePDFMenu(file.buffer, file.originalname || 'upload.pdf');
 
       // Save structured menu to the database in a transaction
       const savedMenu = await prisma.$transaction(async (tx) => {
@@ -48,7 +48,8 @@ export class MenuController {
               restaurantId,
               name: sec.name,
               description: sec.description || null,
-              order: i
+              order: i,
+              sourceRef: sec.sourceRef ?? parsedMenu.sourceRef ?? null
             }
           });
 
@@ -64,7 +65,8 @@ export class MenuController {
             spiceLevel: item.spiceLevel || 'None',
             allergens: JSON.stringify(item.allergens || []),
             mealType: JSON.stringify(item.mealType || ['Lunch', 'Dinner']),
-            popularityScore: item.popularityScore || 0.0
+            popularityScore: item.popularityScore || 0.0,
+            sourceRef: (item as any).sourceRef ?? sec.sourceRef ?? parsedMenu.sourceRef ?? null
           }));
 
           await tx.menuItem.createMany({
@@ -139,7 +141,8 @@ export class MenuController {
               restaurantId,
               name: sec.name,
               description: sec.description || null,
-              order: i
+              order: i,
+              sourceRef: sec.sourceRef ?? parsedMenu.sourceRef ?? null
             }
           });
 
@@ -154,7 +157,8 @@ export class MenuController {
             spiceLevel: item.spiceLevel || 'None',
             allergens: JSON.stringify(item.allergens || []),
             mealType: JSON.stringify(item.mealType || ['Lunch', 'Dinner']),
-            popularityScore: item.popularityScore || 0.0
+            popularityScore: item.popularityScore || 0.0,
+            sourceRef: (item as any).sourceRef ?? sec.sourceRef ?? parsedMenu.sourceRef ?? null
           }));
 
           await tx.menuItem.createMany({

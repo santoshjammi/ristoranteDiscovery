@@ -1,5 +1,5 @@
 import pdf from 'pdf-parse';
-import { aiService } from './ai.service';
+import { menuExtractionCapability } from '../infrastructure/ai/capabilities/MenuExtractionCapability';
 
 export interface StructuredMenuItem {
   name: string;
@@ -11,16 +11,32 @@ export interface StructuredMenuItem {
   allergens: string[];
   mealType: string[]; // "Breakfast", "Lunch", "Dinner", "Late Night", etc.
   popularityScore: number;
+  /** Provenance pointer back to the source menu evidence (file name / URL / hash). */
+  sourceRef?: string;
 }
 
 export interface StructuredMenuSection {
   name: string;
   description?: string;
   items: StructuredMenuItem[];
+  /** Provenance pointer back to the source menu evidence (file name / URL / hash). */
+  sourceRef?: string;
 }
 
 export interface ParsedMenuResult {
   sections: StructuredMenuSection[];
+  /** Provenance pointer for the whole parsed menu source. */
+  sourceRef?: string;
+}
+
+/** Build a short, stable provenance hash of the raw menu source text. */
+export function hashSource(rawText: string): string {
+  let h = 5381;
+  for (let i = 0; i < rawText.length; i++) {
+    h = ((h << 5) + h + rawText.charCodeAt(i)) | 0;
+  }
+  // djb2 with a stable, positive hex representation
+  return `raw:${(h >>> 0).toString(16)}`;
 }
 
 export class ParserService {
@@ -38,52 +54,37 @@ export class ParserService {
   }
 
   /**
-   * Send raw menu text to AIService to convert it into a fully structured menu model
+   * Send raw menu text to the AI MenuExtractionCapability to convert it into a
+   * fully structured menu model. Degrades gracefully to an empty menu envelope
+   * if all providers fail — never throws.
    */
-  async parseMenuText(rawText: string): Promise<ParsedMenuResult> {
-    const systemInstruction = `
-You are an expert culinary AI data architect. Your task is to analyze raw restaurant menu text, extract all sections and items, normalize prices, and enrich each item with dietary, allergen, spice, and meal tags.
+  async parseMenuText(rawText: string, sourceName?: string): Promise<ParsedMenuResult> {
+    const result = await menuExtractionCapability.extract({ rawText });
 
-Ensure strict adherence to the following structured output format:
-{
-  "sections": [
-    {
-      "name": "Section Name (e.g., Starters, Mains, Desserts, Cocktails)",
-      "description": "Optional brief description of the section",
-      "items": [
-        {
-          "name": "Name of the dish",
-          "description": "Detailed description of the dish including how it is prepared",
-          "price": 15.50, // Float, normalized to standard number (omit currency symbols)
-          "ingredients": ["Ingredient 1", "Ingredient 2"], // Exhaustive list of ingredients mentioned or highly inferred
-          "dietaryType": ["Vegetarian", "Vegan", "Gluten-Free", "Halal", "Kosher"], // Apply appropriate dietary tags
-          "spiceLevel": "Medium", // "Mild", "Medium", "Hot", "Extra Hot", or "None"
-          "allergens": ["Gluten", "Dairy", "Nuts", "Soy", "Shellfish", "Eggs"], // Identify potential allergens
-          "mealType": ["Lunch", "Dinner"], // "Breakfast", "Lunch", "Dinner", "Late Night"
-          "popularityScore": 0.0 // Keep at 0.0 default
-        }
-      ]
+    if (!result.ok) {
+      console.warn(
+        `⚠️ [Menu] capability failed (${result.failure.kind}: ${result.failure.message}); returning deterministic fallback.`,
+      );
+      return { sections: [], sourceRef: sourceName || hashSource(rawText) };
     }
-  ]
-}
 
-Rules:
-1. Do not hallucinate items. Only extract items present in the text.
-2. Prices must be decimal numbers. If a price is missing, assign a reasonable average or 0.0.
-3. Classify dietary types, spice levels, allergens, and meal types accurately based on ingredients and descriptions.
-`;
-
-    const prompt = `Please parse and structure this raw restaurant menu:\n\n${rawText}`;
-
-    return await aiService.generateJSON<ParsedMenuResult>(prompt, systemInstruction);
+    const sourceRef = sourceName || hashSource(rawText);
+    return {
+      sourceRef,
+      sections: result.data.sections.map((s) => ({
+        ...s,
+        sourceRef,
+        items: s.items.map((i) => ({ ...i, sourceRef })),
+      })),
+    };
   }
 
   /**
    * E2E process: Buffer -> Text -> Structured JSON
    */
-  async parsePDFMenu(pdfBuffer: Buffer): Promise<ParsedMenuResult> {
+  async parsePDFMenu(pdfBuffer: Buffer, sourceName?: string): Promise<ParsedMenuResult> {
     const rawText = await this.extractTextFromPDF(pdfBuffer);
-    return await this.parseMenuText(rawText);
+    return await this.parseMenuText(rawText, sourceName);
   }
 }
 

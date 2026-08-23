@@ -1,5 +1,10 @@
 /**
- * AI Service — multi-provider structured output helper.
+ * RIST-AI-001 — AI Service (multi-provider structured output helper).
+ *
+ * This is the SOLE owner of provider names and the provider cascade. It is the
+ * refactor of the legacy services/ai.service.ts, relocated into the AI
+ * capability layer. Provider names (`nvidia` / `ollama-cloud` / `local`) may
+ * ONLY appear here (and in infrastructure/ai/providers/ + routing config).
  *
  * Default behavior (generateJSON):
  *   1. NVIDIA NIM         (primary, if NVIDIA_API_KEY is set)
@@ -9,6 +14,11 @@
  *
  * FAQ generation (generateJSONLight):
  *   Always routes through local Ollama — the light model is small enough.
+ *
+ * Failure classification is OPERATIONAL: every provider request is wrapped in
+ * an AbortController with a bounded timeout (guardrails.DEFAULT_TIMEOUT_MS).
+ * On timeout the request is aborted and a CapabilityError with kind `timeout`
+ * is raised, which then triggers the provider fallback cascade.
  */
 
 import {
@@ -23,17 +33,18 @@ import {
   OLLAMA_CLOUD_MODEL,
   OLLAMA_HOST,
 } from './ai.config';
+import type { GenerateOptions, ProviderName } from '../contracts/types';
+import {
+  CapabilityError,
+  CapabilityTimeoutError,
+  classifyFailure,
+  errorMessage,
+  TIMEOUT_REASON,
+  type CapabilityFailureKind,
+} from '../contracts/CapabilityError';
+import { DEFAULT_TIMEOUT_MS } from '../guardrails/guardrails';
 
-/* ── public interface ─────────────────────────────────────── */
-
-export interface GenerateOptions {
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  allowMockFallback?: boolean;
-  /** Which provider to use. Defaults to 'auto' (cascade). */
-  provider?: 'nvidia' | 'ollama-cloud' | 'local' | 'auto';
-}
+export type { GenerateOptions } from '../contracts/types';
 
 /* ── internal shapes ──────────────────────────────────────── */
 
@@ -46,7 +57,38 @@ interface OllamaChatResponse {
   response?: string;
 }
 
-type Provider = 'nvidia' | 'ollama-cloud' | 'local';
+type Provider = ProviderName;
+
+/** A fetch that aborts after `timeoutMs`, surfacing a timeout-kind failure. */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit & { timeoutMs?: number },
+): Promise<Response> {
+  const timeoutMs = init.timeoutMs && init.timeoutMs > 0 ? init.timeoutMs : DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(TIMEOUT_REASON)), timeoutMs);
+  const { timeoutMs: _omit, signal: _signal, ...fetchInit } = init;
+  try {
+    return await fetch(url, { ...fetchInit, signal: controller.signal });
+  } catch (error) {
+    // Re-wrap the abort so the caller can classify it as a timeout deterministically.
+    if (controller.signal.aborted) {
+      throw new CapabilityTimeoutError(
+        `Provider request to ${url} aborted after ${timeoutMs}ms`,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Map an HTTP status into a typed CapabilityError kind. */
+function httpStatusKind(status: number): CapabilityFailureKind {
+  if (status === 429) return 'rate_limited';
+  if (status === 401 || status === 403) return 'authentication_failed';
+  return 'provider_unavailable';
+}
 
 /* ── OpenAI-compatible adapter ───────────────────────────── */
 
@@ -57,8 +99,9 @@ async function openAICompatibleChat(
   messages: Array<{ role: 'system' | 'user'; content: string }>,
   temperature: number,
   maxTokens: number,
+  timeoutMs?: number,
 ): Promise<OpenAICompatibleResponse> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const res = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -71,11 +114,15 @@ async function openAICompatibleChat(
       max_tokens: maxTokens,
       response_format: { type: 'json_object' },
     }),
+    timeoutMs,
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`OpenAI-compatible request to ${baseUrl} returned ${res.status}: ${text}`);
+    throw new CapabilityError(
+      httpStatusKind(res.status),
+      `OpenAI-compatible request to ${baseUrl} returned ${res.status}: ${text}`,
+    );
   }
 
   return res.json() as Promise<OpenAICompatibleResponse>;
@@ -94,7 +141,7 @@ class AIService {
     if (this.ollamaAvailable !== null) return this.ollamaAvailable;
 
     try {
-      const res = await fetch(`${OLLAMA_HOST}/api/tags`);
+      const res = await fetchWithTimeout(`${OLLAMA_HOST}/api/tags`, { timeoutMs: 3000 });
       this.ollamaAvailable = res.ok;
       if (this.ollamaAvailable) {
         console.log(`🤖 AI Service: connected to local Ollama at ${OLLAMA_HOST}.`);
@@ -120,6 +167,7 @@ class AIService {
   ): Promise<T> {
     const model = options?.model || COMPLEX_MODEL;
     const fallbackAllowed = options?.allowMockFallback ?? ALLOW_MOCK_FALLBACK;
+    const timeoutMs = options?.timeoutMs;
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
     if (systemInstruction?.trim()) {
@@ -147,20 +195,23 @@ class AIService {
 
     if (providers.length === 0) {
       if (fallbackAllowed) return this.mockResponse<T>();
-      throw new Error(
+      throw new CapabilityError(
+        'no_providers_configured',
         'No AI providers configured. Set NVIDIA_API_KEY or OLLAMA_API_KEY, or run local Ollama.',
       );
     }
 
     let lastError: Error | null = null;
+    let lastKind: CapabilityFailureKind = 'unknown';
 
     for (const provider of providers) {
       try {
-        return await this.callProvider<T>(provider, model, messages, temperature, maxTokens);
+        return await this.callProvider<T>(provider, model, messages, temperature, maxTokens, timeoutMs);
       } catch (error) {
         lastError = error as Error;
+        lastKind = classifyFailure(error);
         console.warn(
-          `⚠️ AI Service: ${provider} failed (${(error as Error).message}), trying next provider…`,
+          `⚠️ AI Service: ${provider} failed (${errorMessage(error)}), trying next provider…`,
         );
       }
     }
@@ -171,8 +222,9 @@ class AIService {
       return this.mockResponse<T>();
     }
 
-    throw new Error(
-      `Failed to generate structured AI output via any provider. Last error: ${(lastError as Error).message}`,
+    throw new CapabilityError(
+      'all_providers_failed',
+      `Failed to generate structured AI output via any provider. Last error: ${errorMessage(lastError)}`,
     );
   }
 
@@ -184,10 +236,11 @@ class AIService {
     messages: Array<{ role: 'system' | 'user'; content: string }>,
     temperature: number,
     maxTokens: number,
+    timeoutMs?: number,
   ): Promise<T> {
     switch (provider) {
       case 'nvidia': {
-        if (!NVIDIA_API_KEY) throw new Error('NVIDIA_API_KEY not set');
+        if (!NVIDIA_API_KEY) throw new CapabilityError('authentication_failed', 'NVIDIA_API_KEY not set');
         const res = await openAICompatibleChat(
           NVIDIA_BASE_URL,
           NVIDIA_API_KEY,
@@ -195,14 +248,15 @@ class AIService {
           messages,
           temperature,
           maxTokens,
+          timeoutMs,
         );
         const content = res.choices?.[0]?.message?.content;
-        if (!content) throw new Error('NVIDIA NIM returned empty content');
+        if (!content) throw new CapabilityError('malformed_output', 'NVIDIA NIM returned empty content');
         return this.parseJSON<T>(content);
       }
 
       case 'ollama-cloud': {
-        if (!OLLAMA_CLOUD_API_KEY) throw new Error('OLLAMA_API_KEY not set');
+        if (!OLLAMA_CLOUD_API_KEY) throw new CapabilityError('authentication_failed', 'OLLAMA_API_KEY not set');
         const res = await openAICompatibleChat(
           OLLAMA_CLOUD_BASE_URL,
           OLLAMA_CLOUD_API_KEY,
@@ -210,17 +264,18 @@ class AIService {
           messages,
           temperature,
           maxTokens,
+          timeoutMs,
         );
         const content = res.choices?.[0]?.message?.content;
-        if (!content) throw new Error('Ollama Cloud returned empty content');
+        if (!content) throw new CapabilityError('malformed_output', 'Ollama Cloud returned empty content');
         return this.parseJSON<T>(content);
       }
 
       case 'local': {
         const available = await this.pingOllama();
-        if (!available) throw new Error('Local Ollama is unavailable');
+        if (!available) throw new CapabilityError('provider_unavailable', 'Local Ollama is unavailable');
 
-        const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+        const res = await fetchWithTimeout(`${OLLAMA_HOST}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -230,18 +285,19 @@ class AIService {
             format: 'json',
             options: { temperature, num_predict: maxTokens },
           }),
+          timeoutMs,
         });
 
-        if (!res.ok) throw new Error(`Ollama returned ${res.status} ${res.statusText}`);
+        if (!res.ok) throw new CapabilityError(httpStatusKind(res.status), `Ollama returned ${res.status} ${res.statusText}`);
 
         const data = (await res.json()) as OllamaChatResponse;
         const content = data.message?.content ?? data.response ?? '';
-        if (!content) throw new Error('Local Ollama returned empty content');
+        if (!content) throw new CapabilityError('malformed_output', 'Local Ollama returned empty content');
         return this.parseJSON<T>(content);
       }
 
       default:
-        throw new Error(`Unknown provider: ${provider}`);
+        throw new CapabilityError('unknown', `Unknown provider: ${provider}`);
     }
   }
 
@@ -263,7 +319,7 @@ class AIService {
 
   private parseJSON<T>(content: string): T {
     const trimmed = content.trim();
-    if (!trimmed) throw new Error('Empty response from AI');
+    if (!trimmed) throw new CapabilityError('malformed_output', 'Empty response from AI');
 
     const candidates = [
       trimmed,
@@ -279,7 +335,8 @@ class AIService {
       }
     }
 
-    throw new Error(
+    throw new CapabilityError(
+      'malformed_output',
       `Failed to parse AI response as JSON. Preview: ${trimmed.slice(0, 300)}`,
     );
   }

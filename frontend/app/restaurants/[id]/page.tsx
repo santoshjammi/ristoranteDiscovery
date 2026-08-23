@@ -76,6 +76,9 @@ export default function RestaurantDetailPage() {
   const loadSchemas = async () => { if (!id) return; try { setSchemas(await getSchemas(id)); } catch {} };
   const loadAudit = async () => { if (!id) return; try { setAudit(await getSEOAudit(id)); } catch {} };
 
+  const getAuthToken = (): string | null =>
+    typeof window !== "undefined" ? window.localStorage.getItem("rdi_token") : null;
+
   const handleAction = async (action: string, fn: () => Promise<any>) => {
     setActionLoading(action);
     try {
@@ -149,7 +152,7 @@ export default function RestaurantDetailPage() {
             <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
               <ActionButton label="Optimize Names" onClick={() => handleAction("names", () => optimizeNames(id))} loading={actionLoading === "names"} />
               <ActionButton label="Sync Landmarks" onClick={() => handleAction("landmarks", () => optimizeLandmarks(id))} loading={actionLoading === "landmarks"} />
-              <ActionButton label="Build Index" onClick={() => handleAction("index", () => buildIndex(id))} loading={actionLoading === "index"} />
+              <ActionButton label="Build Index" onClick={() => handleAction("index", () => buildIndex(id, getAuthToken() || undefined))} loading={actionLoading === "index"} />
               <Link href="/restaurants/new" className="btn-pearl" style={{ fontSize: "1.2rem" }}>
                 Intake another restaurant
               </Link>

@@ -21,6 +21,7 @@ import subscriptionRoutes from '../interfaces/routes/subscription.routes';
 import scorecardRoutes from '../interfaces/routes/scorecard.routes';
 import connectorRoutes from '../interfaces/routes/connector.routes';
 import portfolioRoutes from '../interfaces/routes/portfolio.routes';
+import { authMiddleware } from '../interfaces/middleware/auth';
 
 const router = Router();
 
@@ -66,9 +67,12 @@ router.get('/seo/public/:restaurantId', seoController.getPublicSchemaMarkup);
 router.get('/seo/:restaurantId/audit', searchController.audit);
 
 // === Search & RAG Routes ===
-router.post('/search/chat', searchController.chat);
-router.get('/search/recommend', searchController.recommend);
-router.post('/search/index', searchController.buildIndex);
+// Protected: these expose restaurant intelligence (menu, review synthesis,
+// citations). Auth scoping happens in the controller via the authenticated
+// user's authorized restaurant set.
+router.post('/search/chat', authMiddleware, searchController.chat);
+router.get('/search/recommend', authMiddleware, searchController.recommend);
+router.post('/search/index', authMiddleware, searchController.buildIndex);
 
 // === Discovery Routes (RVS-001) ===
 router.use('/discovery', discoveryRoutes);

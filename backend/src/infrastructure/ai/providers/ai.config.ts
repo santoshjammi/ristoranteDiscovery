@@ -1,6 +1,8 @@
 /**
- * AI configuration for the discovery backend.
+ * RIST-AI-001 — AI configuration for the discovery backend.
+ *
  * Priority: NVIDIA NIM → Ollama Cloud → local Ollama (last resort).
+ * Moved verbatim from services/ai.config.ts into infrastructure/ai/providers/.
  */
 
 // ── NVIDIA NIM (primary) ────────────────────────────────────────

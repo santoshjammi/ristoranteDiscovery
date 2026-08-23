@@ -100,6 +100,9 @@ model MenuSection {
   name         String     // e.g., Appetizers, Main Course, Desserts
   description  String?
   order        Int        @default(0)
+  /// Provenance pointer back to the original public menu evidence the AI
+  /// extracted this section from (nullable; additive only).
+  sourceRef    String?
 
   // Relations
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -122,6 +125,10 @@ model MenuItem {
   allergens       String      // Comma-separated or JSON string of allergens
   mealType        String      // Comma-separated or JSON string of meal types
   popularityScore Float       @default(0.0) // Calculated from reviews
+  /// Provenance pointer back to the original public menu source the AI
+  // extracted this item from (nullable; additive only). Holds the uploaded
+  // filename, source URL, or a raw-text hash of the source evidence.
+  sourceRef       String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

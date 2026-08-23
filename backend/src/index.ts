@@ -11,7 +11,7 @@ import { errorHandler } from './interfaces/middleware/errorHandler';
 import { loadConfig } from './lib/config';
 import { logger } from './lib/logger';
 import { seedDefaultAdmin, seedDefaultConnectors } from './lib/seed';
-import { aiService } from './services/ai.service';
+import { aiService } from './infrastructure/ai/providers/AIService';
 
 // Load environment variables
 dotenv.config();

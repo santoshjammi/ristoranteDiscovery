@@ -6,9 +6,9 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 
-// Mock the AI service so AI-backed endpoints (e.g. SEO audit) return
+// Mock the AI provider layer so AI-backed endpoints (e.g. SEO audit) return
 // deterministically instead of blocking on an unreachable LLM backend.
-vi.mock('../../services/ai.service', () => ({
+vi.mock('../../infrastructure/ai/providers/AIService', () => ({
   aiService: {
     generateJSON: vi.fn().mockResolvedValue({
       scorecard: { photoCompleteness: 80, descriptionCompleteness: 70, hoursCompleteness: 90, overallScore: 78 },
@@ -17,6 +17,8 @@ vi.mock('../../services/ai.service', () => ({
       keywordOpportunities: ['best italian in city'],
       actionItems: [{ task: 'Update description', priority: 'High', impact: 'Improves visibility' }],
     }),
+    generateJSONLight: vi.fn().mockResolvedValue({ faqs: [] }),
+    init: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

@@ -146,20 +146,24 @@ export async function getSEOAudit(restaurantId: string): Promise<any> {
   return res.json();
 }
 
-export async function searchChat(query: string): Promise<any> {
+export async function searchChat(query: string, token?: string): Promise<any> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_URL}/api/search/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ query }),
   });
   if (!res.ok) throw new Error("Failed to search");
   return res.json();
 }
 
-export async function buildIndex(restaurantId: string): Promise<any> {
+export async function buildIndex(restaurantId: string, token?: string): Promise<any> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_URL}/api/search/index`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ restaurantId }),
   });
   if (!res.ok) throw new Error("Failed to build index");
