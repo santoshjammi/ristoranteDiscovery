@@ -7,6 +7,15 @@ import { getScorecard } from './ScorecardService';
 
 export type BenchmarkDimension = 'city' | 'cuisine' | 'price' | 'competitors';
 
+/**
+ * RIST-RDI-003 §14 — minimum honest comparison cohort.
+ * Percentiles are NOT meaningful from a tiny peer cohort. Below this many real
+ * peers, we refuse to fabricate percentiles: p50/p75/p90 are returned as null
+ * so the customer-facing UI shows "Pending — insufficient comparison cohort"
+ * instead of dishonest numbers computed from 1–2 peers.
+ */
+export const MIN_PEERS = 3;
+
 export interface BenchmarkResult {
   factorId: string;
   dimension: BenchmarkDimension;
@@ -118,7 +127,14 @@ export async function computeBenchmarks(restaurantId: string): Promise<Benchmark
         const s = peerScorecards.get(pid)?.get(factorId) ?? null;
         if (s !== null) peerScores.push(s);
       }
-      const { p50, p75, p90 } = percentiles(peerScores);
+
+      // RIST-RDI-003 §14 honesty guard: refuse to display percentiles computed
+      // from a tiny real peer cohort (< MIN_PEERS). p50/p75/p90 stay null so the
+      // UI shows "Pending — insufficient comparison cohort"; the honest peer
+      // count is still persisted so we never misreport the cohort size.
+      const { p50, p75, p90 } = peerScores.length < MIN_PEERS
+        ? { p50: null, p75: null, p90: null }
+        : percentiles(peerScores);
 
       const result: BenchmarkResult = {
         factorId,
