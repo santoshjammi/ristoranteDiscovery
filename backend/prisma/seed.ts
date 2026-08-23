@@ -426,6 +426,25 @@ async function main() {
     await prisma.fAQ.create({ data: { ...faq, restaurantId: anandBhavan.id } });
   }
 
+  const restaurantUsers = [
+    { email: 'alpha.manager@ristorante.local', name: 'Alpha Manager', passwordHash: 'seeded', restaurantId: biryaniMaxx.id, role: 'owner' },
+    { email: 'alpha.editor@ristorante.local', name: 'Alpha Editor', passwordHash: 'seeded', restaurantId: biryaniMaxx.id, role: 'editor' },
+    { email: 'dharani.viewer@ristorante.local', name: 'Dharani Viewer', passwordHash: 'seeded', restaurantId: dharani.id, role: 'viewer' },
+  ];
+
+  for (const u of restaurantUsers) {
+    const user = await (prisma as any).user.upsert({
+      where: { email: u.email },
+      update: { name: u.name },
+      create: { email: u.email, name: u.name, passwordHash: u.passwordHash, emailVerified: true },
+    });
+    await (prisma as any).restaurantMember.upsert({
+      where: { restaurantId_userId: { restaurantId: u.restaurantId, userId: user.id } },
+      update: { role: u.role },
+      create: { restaurantId: u.restaurantId, userId: user.id, role: u.role },
+    });
+  }
+
   console.log('✅ Seeding complete!');
   console.log('');
   console.log('Restaurants seeded:');

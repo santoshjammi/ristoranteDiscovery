@@ -35,8 +35,8 @@ export class Scorecard {
 
   get overallScore(): number {
     const weighted = this.dimensions
-      .filter(d => !d.isInformational)
-      .reduce((sum, d) => sum + d.finalScore * (d.weight / 100), 0);
+      .filter(d => !d.isInformational && d.finalScore !== null)
+      .reduce((sum, d) => sum + (d.finalScore as number) * (d.weight / 100), 0);
     return Math.round(weighted);
   }
 
@@ -81,7 +81,7 @@ export class Scorecard {
 
   static recalculate(
     previous: Scorecard,
-    rawScores: Array<{ name: string; rawScore: number; weight: number; evidenceIds: string[]; isInformational: boolean }>,
+    rawScores: Array<{ name: string; rawScore: number | null; weight: number; evidenceIds: string[]; isInformational: boolean }>,
   ): Scorecard {
     const dimensions = rawScores.map(r => new ScoreDimension({
       name: r.name,

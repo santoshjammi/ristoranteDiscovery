@@ -10,11 +10,11 @@ import { DigitalTwinRepository, ScorecardRepository, EvidenceRepository } from '
 export interface ScoreInput {
   restaurantId: string;
   rawScores: Array<{
-    name: string;
-    rawScore: number;
-    weight: number;
-    evidenceIds: string[];
-    isInformational: boolean;
+  name: string;
+  rawScore: number | null;
+  weight: number;
+  evidenceIds: string[];
+  isInformational: boolean;
   }>;
 }
 
@@ -69,7 +69,7 @@ export class CalculateScoreUseCase {
     // Check for threshold crossings
     for (const dim of newScorecard.weightedDimensions) {
       const prevDim = previousScorecard?.dimensions.find((d: ScoreDimension) => d.name === dim.name);
-      if (prevDim) {
+      if (prevDim && prevDim.finalScore !== null && dim.finalScore !== null) {
         const thresholds = [30, 50, 70, 85];
         for (const threshold of thresholds) {
           const crossedUp = prevDim.finalScore < threshold && dim.finalScore >= threshold;

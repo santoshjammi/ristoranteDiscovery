@@ -1,7 +1,7 @@
 // Domain entity for the Discovery bounded context
 // Pure domain — zero framework dependencies
 
-export type ScoreValue = number; // 0-100 integer
+export type ScoreValue = number | null; // null = pending observation
 
 export interface ScoreDimensionProps {
   name: string;

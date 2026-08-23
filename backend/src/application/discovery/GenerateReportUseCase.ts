@@ -30,8 +30,12 @@ export class GenerateReportUseCase {
 
     const topFindings: string[] = [];
     if (score) {
-      const lowest = [...score.weightedDimensions].sort((a, b) => a.finalScore - b.finalScore)[0];
-      topFindings.push(`Lowest dimension: ${lowest.name} (${lowest.finalScore}/100)`);
+      const lowest = [...score.weightedDimensions]
+        .filter(d => d.finalScore !== null)
+        .sort((a, b) => (a.finalScore as number) - (b.finalScore as number))[0];
+      if (lowest) {
+        topFindings.push(`Lowest dimension: ${lowest.name} (${lowest.finalScore}/100)`);
+      }
       if (score.trend === 'down') {
         topFindings.push(`Score declined ${Math.abs(score.scoreChange)} points this period`);
       }

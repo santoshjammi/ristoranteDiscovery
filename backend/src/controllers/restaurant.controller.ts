@@ -34,6 +34,10 @@ export class RestaurantController {
     this.fetchAndSerializeDetails = this.fetchAndSerializeDetails.bind(this);
     this.delete = this.delete.bind(this);
     this.toggleDisable = this.toggleDisable.bind(this);
+    this.mergeSelected = this.mergeSelected.bind(this);
+    this.listMembers = this.listMembers.bind(this);
+    this.addMember = this.addMember.bind(this);
+    this.removeMember = this.removeMember.bind(this);
   }
 
   /**
@@ -312,8 +316,179 @@ export class RestaurantController {
   }
 
   /**
-   * Delete a restaurant (hard delete)
+   * Merge a manually selected set of restaurant records into one keeper
    */
+  async mergeSelected(req: Request, res: Response) {
+    try {
+      const { keeperId, mergeIds } = req.body ?? {};
+      const ids: string[] = Array.isArray(mergeIds) ? mergeIds.filter(Boolean) : [];
+      if (!keeperId || ids.length < 1) {
+        return res.status(400).json({ error: 'keeperId and mergeIds are required' });
+      }
+      if (ids.includes(keeperId)) {
+        return res.status(400).json({ error: 'mergeIds must not include keeperId' });
+      }
+
+      const keeper = await prisma.restaurant.findUnique({ where: { id: keeperId } });
+      if (!keeper) return res.status(404).json({ error: 'Keeper restaurant not found' });
+
+      const duplicates = await prisma.restaurant.findMany({ where: { id: { in: ids } } });
+      if (duplicates.length !== ids.length) {
+        return res.status(404).json({ error: 'One or more restaurants to merge were not found' });
+      }
+
+      const mergedFrom: string[] = [];
+      const movedTables: string[] = [];
+
+      await prisma.$transaction(async (tx) => {
+        for (const source of duplicates) {
+          if (source.id === keeperId) continue;
+          const sourceName = source.name || '';
+          const sourceAddress = source.address || '';
+          const sourceCity = source.city || '';
+
+          // Move one-to-many references. If a target row already exists, delete the duplicate child row.
+          const moveSections = await tx.menuSection.findMany({ where: { restaurantId: source.id } });
+          for (const section of moveSections) {
+            const conflict = await tx.menuSection.findFirst({ where: { restaurantId: keeperId, name: section.name } });
+            if (conflict) {
+              await tx.menuItem.deleteMany({ where: { sectionId: section.id } });
+              await tx.menuSection.delete({ where: { id: section.id } });
+            } else {
+              await tx.menuSection.update({ where: { id: section.id }, data: { restaurantId: keeperId } });
+            }
+          }
+          movedTables.push('menuSections');
+
+          const moveItems = await tx.menuItem.findMany({ where: { restaurantId: source.id } });
+          for (const item of moveItems) {
+            const section = await tx.menuSection.findFirst({ where: { restaurantId: keeperId, name: { not: '' } }, orderBy: { order: 'asc' } });
+            if (section) {
+              await tx.menuItem.update({ where: { id: item.id }, data: { restaurantId: keeperId, sectionId: section.id } });
+            }
+          }
+          if (moveItems.length) movedTables.push('menuItems');
+
+          await tx.reviewAnalysis.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.fAQ.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.sEOMarkup.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.vectorCache.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.competitiveSet.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.organizationRestaurant.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.decision.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.scorecardSnapshot.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          await tx.benchmark.updateMany({ where: { restaurantId: source.id }, data: { restaurantId: keeperId } });
+          movedTables.push('content/timeline/benchmarks');
+
+          // Merge scalar fields conservatively: keep existing keeper values unless missing.
+          await tx.restaurant.update({
+            where: { id: keeperId },
+            data: {
+              phone: keeper.phone || source.phone || null,
+              website: keeper.website || source.website || null,
+              latitude: keeper.latitude || source.latitude || null,
+              longitude: keeper.longitude || source.longitude || null,
+              regionalCuisine: keeper.regionalCuisine || source.regionalCuisine || null,
+              priceRange: keeper.priceRange || source.priceRange || null,
+              parkingInfo: keeper.parkingInfo || source.parkingInfo || null,
+              timings: keeper.timings || source.timings || JSON.stringify({}),
+              cuisineTypes: keeper.cuisineTypes || source.cuisineTypes,
+              dietarySupport: keeper.dietarySupport || source.dietarySupport,
+              amenities: keeper.amenities || source.amenities,
+              ambience: keeper.ambience || source.ambience,
+              nearbyLandmarks: keeper.nearbyLandmarks || source.nearbyLandmarks,
+            },
+          });
+
+          await tx.restaurant.delete({ where: { id: source.id } });
+          mergedFrom.push(source.id);
+        }
+      });
+
+      return res.json({
+        success: true,
+        keeperId,
+        mergedFrom,
+        movedTables: Array.from(new Set(movedTables)),
+        message: `Merged ${mergedFrom.length} restaurant(s) into ${keeper.name}`,
+      });
+    } catch (error: any) {
+      console.error('Failed to merge selected restaurants:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+  }
+
+  /**
+   * Fetch restaurant-scoped members
+   */
+  async listMembers(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const members = await (prisma as any).restaurantMember.findMany({
+        where: { restaurantId: id },
+        include: { user: true },
+        orderBy: { addedAt: 'desc' },
+      });
+      return res.json({
+        data: members.map((m: any) => ({
+          id: m.id,
+          restaurantId: m.restaurantId,
+          userId: m.userId,
+          role: m.role,
+          addedAt: m.addedAt,
+          user: { id: m.user.id, name: m.user.name, email: m.user.email },
+        })),
+      });
+    } catch (error: any) {
+      console.error('Failed to list restaurant members:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Add or update a restaurant-scoped member
+   */
+  async addMember(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { email, role } = req.body ?? {};
+      if (!email) return res.status(400).json({ error: 'email is required' });
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      const member = await (prisma as any).restaurantMember.upsert({
+        where: { restaurantId_userId: { restaurantId: id, userId: user.id } },
+        update: { role: role || 'editor' },
+        create: { restaurantId: id, userId: user.id, role: role || 'editor' },
+      });
+      return res.status(201).json({
+        data: {
+          id: member.id,
+          restaurantId: member.restaurantId,
+          userId: member.userId,
+          role: member.role,
+          addedAt: member.addedAt,
+        },
+      });
+    } catch (error: any) {
+      console.error('Failed to add restaurant member:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+  }
+
+  /**
+   * Remove a restaurant-scoped member
+   */
+  async removeMember(req: Request, res: Response) {
+    try {
+      const { id, userId } = req.params;
+      await prisma.restaurantMember.delete({ where: { restaurantId_userId: { restaurantId: id, userId } } });
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('Failed to remove restaurant member:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+  }
+
   async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;

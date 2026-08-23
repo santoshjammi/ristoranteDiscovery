@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useList } from "@/lib/useList";
-import { SearchBar, SortButton, FilterDropdown, Pagination, ActiveFilters } from "@/components/shared/ListControls";
+import { SearchBar, SortButton, FilterDropdown, ActiveFilters } from "@/components/shared/ListControls";
 import { PortfolioCard, PortfolioSummaryBar, type Portfolio, type PortfolioRestaurant } from "@/components/scorecard/PortfolioCard";
 import { PortfolioHeatMap, type HeatFilter } from "@/components/scorecard/PortfolioHeatMap";
 import { PrioritizationView, type PrioritizedPortfolio, type SortKey } from "@/components/scorecard/PrioritizationView";
@@ -29,6 +29,7 @@ function RestaurantList() {
   const [heatFilter, setHeatFilter] = useState<"all" | "critical" | "attention" | "healthy">("all");
   const [prioritized, setPrioritized] = useState<PrioritizedPortfolio | null>(null);
   const [prioritizedLoading, setPrioritizedLoading] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const fetchPortfolio = async () => {
     if (!token) return;
@@ -71,6 +72,13 @@ function RestaurantList() {
     defaultSort: { key: "overallScore", direction: "desc" },
     pageSize: 10,
   });
+
+  const visibleRestaurants = list.filtered.slice(0, visibleCount);
+  const canLoadMore = visibleCount < list.filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [list.search, list.sort.key, list.sort.direction, list.filters, restaurants.length]);
 
   const createRestaurant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,14 +268,12 @@ function RestaurantList() {
         </div>
       ) : (
         <>
-          {/* Results count */}
           <p style={{ ...typography.caption, margin: `0 0 ${spacing.md}` }}>
-            Showing {list.paged.length} of {list.totalCount}
+            Showing {visibleRestaurants.length} of {list.totalCount}
           </p>
 
-          {/* Portfolio cards */}
           <div style={{ display: "flex", flexDirection: "column", gap: spacing.md }}>
-            {list.paged.map((r) => (
+            {visibleRestaurants.map((r) => (
               <div key={r.id} style={{ position: "relative" }}>
                 <PortfolioCard restaurant={r} />
                 <button
@@ -295,8 +301,25 @@ function RestaurantList() {
             ))}
           </div>
 
-          {/* Pagination */}
-          <Pagination page={list.page} totalPages={list.totalPages} totalCount={list.totalCount} onPageChange={list.setPage} />
+          {canLoadMore && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: spacing.lg }}>
+              <button
+                onClick={() => setVisibleCount((n) => Math.min(n + 20, list.totalCount))}
+                style={{
+                  padding: `${spacing.sm} ${spacing.xl}`,
+                  borderRadius: radius.md,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.surface,
+                  color: colors.text,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Load more
+              </button>
+            </div>
+          )}
         </>
       ))}
     </div>

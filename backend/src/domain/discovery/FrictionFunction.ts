@@ -13,7 +13,8 @@ export class FrictionFunction {
    *
    * Maximum achievable final score: 79
    */
-  static apply(rawScore: number): number {
+  static apply(rawScore: number | null): number | null {
+    if (rawScore === null) return null;
     if (rawScore <= 0) return 0;
     if (rawScore <= 40) return Math.round(rawScore);
 

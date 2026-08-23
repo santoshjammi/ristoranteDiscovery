@@ -38,6 +38,10 @@ router.get('/restaurants', restaurantController.list);
 router.get('/restaurants/:id', restaurantController.getDetails);
 router.post('/restaurants/:id/optimize/names', restaurantController.optimizeNames);
 router.post('/restaurants/:id/optimize/landmarks', restaurantController.optimizeLandmarks);
+router.get('/restaurants/:id/members', restaurantController.listMembers);
+router.post('/restaurants/:id/members', restaurantController.addMember);
+router.delete('/restaurants/:id/members/:userId', restaurantController.removeMember);
+router.post('/restaurants/merge', restaurantController.mergeSelected);
 router.delete('/restaurants/:id', restaurantController.delete);
 router.patch('/restaurants/:id/disable', restaurantController.toggleDisable);
 

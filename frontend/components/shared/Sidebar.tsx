@@ -83,8 +83,8 @@ function NavLink({ item, path, depth = 0 }: { item: NavItem; path: string; depth
           padding: `${spacing.sm} ${spacing.md}`,
           borderRadius: radius.md,
           textDecoration: "none",
-          fontSize: "0.875rem",
-          fontWeight: active ? 600 : 400,
+          fontSize: "0.9rem",
+          fontWeight: active ? 700 : 500,
           color: active ? colors.primary : colors.text,
           background: active ? colors.primaryLight : "transparent",
           marginLeft: depth > 0 ? `${depth * 1.25}rem` : 0,
@@ -120,7 +120,7 @@ export function Sidebar({ user, organization, token, onSignOut }: { user: any; o
   return (
     <div
       style={{
-        width: 240,
+        width: 280,
         minHeight: "100vh",
         background: colors.surface,
         borderRight: `1px solid ${colors.border}`,

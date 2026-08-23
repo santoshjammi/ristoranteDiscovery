@@ -59,6 +59,7 @@ model Restaurant {
   decisions                  Decision[]
   scorecardSnapshots        ScorecardSnapshot[]
   benchmarks                Benchmark[]
+  members                   RestaurantMember[]
 }
 
 model CompetitiveSet {
@@ -431,6 +432,7 @@ model User {
 
   memberships    OrganizationMember[]
   ownedOrganizations Organization[]
+  restaurantMembers  RestaurantMember[]
 }
 
 model Organization {
@@ -459,6 +461,19 @@ model OrganizationMember {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
+}
+
+model RestaurantMember {
+  id           String   @id @default(uuid())
+  restaurantId String
+  userId       String
+  role         String   @default("editor") // owner, editor, viewer
+  addedAt      DateTime @default(now())
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, userId])
 }
 
 model OrganizationRestaurant {

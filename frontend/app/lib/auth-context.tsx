@@ -53,7 +53,7 @@ async function healthCheck(maxRetries = 3): Promise<boolean> {
   const delays = [1000, 2000, 4000];
   for (let i = 0; i <= maxRetries; i++) {
     try {
-      await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(3_000) });
+      await fetch(`${API}/health/ready`, { signal: AbortSignal.timeout(3_000) });
       ok = true;
       break;
     } catch {

@@ -206,6 +206,34 @@ export interface AuditReport {
   generatedAt: string;
 }
 
+export interface IntakeEvidence {
+  sourceUrl: string;
+  sourceType: string;
+  observedAt?: string;
+  confidence?: number;
+  normalizedValue?: any;
+  status?: string;
+}
+
+export interface IntakeResponse {
+  identityState: 'confirmed' | 'probable' | 'ambiguous' | 'unresolved';
+  restaurant: { id: string; name: string; address: string; city?: string; website?: string | null } | null;
+  evidence: IntakeEvidence[];
+  scorecard: any;
+  audit: AuditReport | null;
+}
+
+export async function intakeRestaurant(data: { name: string; address: string; city?: string; googleShareUrl?: string; website?: string; menuUrl?: string }): Promise<IntakeResponse> {
+  const res = await fetch(`${API_URL}/api/discovery/intake`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to intake restaurant");
+  const json = await res.json();
+  return json.data;
+}
+
 export async function runAudit(restaurantId: string, token: string): Promise<AuditReport> {
   const res = await fetch(`${API_URL}/api/audit/restaurants/${restaurantId}`, {
     method: "POST",

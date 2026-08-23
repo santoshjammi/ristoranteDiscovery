@@ -15,6 +15,13 @@ import { CrossFactorView, type CrossFactorReport } from "@/components/scorecard/
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 
+const benchmarkLabelMap: Record<BenchmarkDimension, string> = {
+  city: "City",
+  cuisine: "Cuisine",
+  price: "Price",
+  competitors: "Nearby competitors",
+};
+
 function ScorecardPage() {
   const { token } = useAuth();
   const params = useParams();
@@ -34,6 +41,13 @@ function ScorecardPage() {
   const [impacts, setImpacts] = useState<ImpactSimulation[]>([]);
   const [comparison, setComparison] = useState<RestaurantComparison | null>(null);
   const [crossFactor, setCrossFactor] = useState<CrossFactorReport | null>(null);
+
+  const factorNameById = scorecard
+    ? scorecard.categories.flatMap((c) => c.factors).reduce<Record<string, string>>((acc, f) => {
+        acc[f.id] = f.name;
+        return acc;
+      }, {})
+    : {};
 
   const fetchScorecard = async () => {
     if (!token || !params.id) return;
@@ -242,6 +256,9 @@ function ScorecardPage() {
             <div>
               <h3 style={{ ...typography.h3, margin: 0 }}>Benchmarking</h3>
               <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Compared to peers</p>
+              <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.muted }}>
+                <strong>Formula:</strong> we compare this restaurant against a peer set, then show whether each factor sits above or below the peer median. <strong>City</strong> = restaurants in the same city. <strong>Cuisine</strong> = restaurants with the same primary cuisine. <strong>Price</strong> = restaurants in the same price tier. <strong>Nearby competitors</strong> = the closest mapped competitors around this restaurant.
+              </p>
             </div>
             <div style={{ display: "flex", gap: spacing.xs }}>
               {(["city", "cuisine", "price", "competitors"] as BenchmarkDimension[]).map((d) => (
@@ -260,7 +277,7 @@ function ScorecardPage() {
                     textTransform: "capitalize",
                   }}
                 >
-                  {d}
+                  {benchmarkLabelMap[d]}
                 </button>
               ))}
             </div>
@@ -270,7 +287,7 @@ function ScorecardPage() {
               <p style={{ ...typography.small, color: colors.muted }}>Loading benchmarks…</p>
             )}
             {benchmarks.map((b) => (
-              <BenchmarkBar key={b.factorId} benchmark={b} />
+              <BenchmarkBar key={b.factorId} benchmark={{ ...b, factorName: factorNameById[b.factorId] }} />
             ))}
           </div>
         </div>

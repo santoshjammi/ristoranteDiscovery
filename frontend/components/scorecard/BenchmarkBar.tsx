@@ -6,6 +6,7 @@ export type BenchmarkDimension = "city" | "cuisine" | "price" | "competitors";
 
 export interface BenchmarkResult {
   factorId: string;
+  factorName?: string;
   dimension: BenchmarkDimension;
   dimensionValue: string;
   score: number | null;
@@ -43,7 +44,7 @@ export function BenchmarkBar({ benchmark }: { benchmark: BenchmarkResult }) {
     <div style={{ padding: spacing.sm, background: colors.bg, borderRadius: radius.sm }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.xs }}>
         <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 600, color: colors.mutedDarker }}>
-          {DIMENSION_LABELS[benchmark.dimension]} · {benchmark.dimensionValue}
+          {benchmark.factorName || benchmark.factorId}
         </p>
         <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 600, color: above ? colors.success : colors.danger }}>
           {above ? "▲" : "▼"} {above ? "above" : "below"} peer median

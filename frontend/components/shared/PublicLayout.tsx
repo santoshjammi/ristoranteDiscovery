@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { colors, spacing, radius } from "@/lib/design-tokens";
 
+const shellMaxWidth = 1240;
+const shellPadding = "clamp(1rem, 3vw, 2.4rem)";
+
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/pricing", label: "Pricing" },

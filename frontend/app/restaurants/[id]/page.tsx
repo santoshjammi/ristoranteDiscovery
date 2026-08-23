@@ -146,10 +146,13 @@ export default function RestaurantDetailPage() {
                 {restaurant.address}, {restaurant.city}{restaurant.state ? `, ${restaurant.state}` : ""}
               </p>
             </div>
-            <div style={{ display: "flex", gap: "0.8rem" }}>
+            <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
               <ActionButton label="Optimize Names" onClick={() => handleAction("names", () => optimizeNames(id))} loading={actionLoading === "names"} />
               <ActionButton label="Sync Landmarks" onClick={() => handleAction("landmarks", () => optimizeLandmarks(id))} loading={actionLoading === "landmarks"} />
               <ActionButton label="Build Index" onClick={() => handleAction("index", () => buildIndex(id))} loading={actionLoading === "index"} />
+              <Link href="/restaurants/new" className="btn-pearl" style={{ fontSize: "1.2rem" }}>
+                Intake another restaurant
+              </Link>
             </div>
           </div>
         </div>

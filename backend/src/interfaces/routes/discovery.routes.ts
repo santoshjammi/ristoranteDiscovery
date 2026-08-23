@@ -6,6 +6,9 @@ import { DiscoveryController } from '../../interfaces/controllers/DiscoveryContr
 const router = Router();
 const controller = new DiscoveryController();
 
+// Intake a restaurant: resolve → observe → score → audit
+router.post('/intake', controller.intake);
+
 // Analyze a restaurant: evidence → scores → recommendations → report
 router.post('/restaurants/:id/analyze', controller.analyze);
 

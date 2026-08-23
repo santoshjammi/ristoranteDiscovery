@@ -3,15 +3,15 @@
 
 export const colors = {
   // Backgrounds
-  bg: '#0f172a',
-  surface: '#1e293b',
-  surfaceHover: '#334155',
+  bg: '#0b1220',
+  surface: '#172033',
+  surfaceHover: '#223047',
 
   // Text
-  text: '#f1f5f9',
-  textSecondary: '#cbd5e1',
-  muted: '#94a3b8',
-  mutedDarker: '#64748b',
+  text: '#f8fafc',
+  textSecondary: '#e2e8f0',
+  muted: '#cbd5e1',
+  mutedDarker: '#94a3b8',
 
   // Borders
   border: '#334155',
@@ -49,13 +49,13 @@ export const spacing = {
 } as const;
 
 export const typography = {
-  h1: { fontSize: '1.5rem', fontWeight: 700, color: colors.text },
-  h2: { fontSize: '1.25rem', fontWeight: 600, color: colors.text },
-  h3: { fontSize: '1rem', fontWeight: 600, color: colors.text },
-  body: { fontSize: '0.875rem', color: colors.text },
-  small: { fontSize: '0.8125rem', color: colors.muted },
-  caption: { fontSize: '0.75rem', color: colors.muted },
-  label: { fontSize: '0.75rem', color: colors.muted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' },
+  h1: { fontSize: '1.7rem', fontWeight: 700, color: colors.text },
+  h2: { fontSize: '1.45rem', fontWeight: 600, color: colors.text },
+  h3: { fontSize: '1.15rem', fontWeight: 600, color: colors.text },
+  body: { fontSize: '0.98rem', color: colors.text },
+  small: { fontSize: '0.9rem', color: colors.muted },
+  caption: { fontSize: '0.82rem', color: colors.muted },
+  label: { fontSize: '0.82rem', color: colors.muted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' },
 } as const;
 
 export const radius = {

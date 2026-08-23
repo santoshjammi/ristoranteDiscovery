@@ -3,33 +3,77 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createRestaurant } from "@/app/lib/api";
+import { createRestaurant, intakeRestaurant } from "@/app/lib/api";
 
 export default function NewRestaurantPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", postalCode: "",
-    phone: "", website: "", cuisineTypes: "", regionalCuisine: "", priceRange: "$$",
+    phone: "", website: "", googleShareUrl: "", menuUrl: "", cuisineTypes: "", regionalCuisine: "", priceRange: "$$",
   });
   const [saving, setSaving] = useState(false);
+  const [intaking, setIntaking] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const readFormValues = (formEl: HTMLFormElement) => {
+    const data = new FormData(formEl);
+    const name = String(data.get("name") || "").trim();
+    const address = String(data.get("address") || "").trim();
+    const city = String(data.get("city") || "").trim();
+    const state = String(data.get("state") || "").trim();
+    const postalCode = String(data.get("postalCode") || "").trim();
+    const phone = String(data.get("phone") || "").trim();
+    const website = String(data.get("website") || "").trim();
+    const googleShareUrl = String(data.get("googleShareUrl") || "").trim();
+    const menuUrl = String(data.get("menuUrl") || "").trim();
+    const cuisineTypes = String(data.get("cuisineTypes") || "").trim();
+    const regionalCuisine = String(data.get("regionalCuisine") || "").trim();
+    const priceRange = String(data.get("priceRange") || "$$").trim();
+    return { name, address, city, state, postalCode, phone, website, googleShareUrl, menuUrl, cuisineTypes, regionalCuisine, priceRange };
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.name || !form.address || !form.city) {
+    const current = readFormValues(e.currentTarget);
+    if (!current.name || !current.address || !current.city) {
       setError("Name, address, and city are required.");
       return;
     }
     setSaving(true); setError("");
     try {
       const r = await createRestaurant({
-        ...form,
-        cuisineTypes: form.cuisineTypes ? form.cuisineTypes.split(",").map((s) => s.trim()) : [],
+        ...current,
+        cuisineTypes: current.cuisineTypes ? current.cuisineTypes.split(",").map((s) => s.trim()) : [],
       });
       router.push(`/restaurants/${r.id}`);
     } catch (err: any) {
       setError(err.message || "Failed to create restaurant");
     } finally { setSaving(false); }
+  };
+
+  const handleIntake = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const current = readFormValues(e.currentTarget.form!);
+    if (!current.name || !current.address) {
+      setError("Name and address are required for intake.");
+      return;
+    }
+    setIntaking(true); setError("");
+    try {
+      const intake = await intakeRestaurant({
+        name: current.name,
+        address: current.address,
+        city: current.city || undefined,
+        website: current.website || undefined,
+        googleShareUrl: current.googleShareUrl || undefined,
+        menuUrl: current.menuUrl || undefined,
+      });
+      const restaurantId = intake.restaurant?.id;
+      if (!restaurantId) throw new Error("Intake completed without a restaurant record.");
+      router.push(`/dashboard/audit/${restaurantId}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to intake restaurant");
+    } finally { setIntaking(false); }
   };
 
   const fields: Array<{ key: string; label: string; placeholder: string; colSpan?: number; hint?: string }> = [
@@ -40,6 +84,8 @@ export default function NewRestaurantPage() {
     { key: "postalCode", label: "Postal Code", placeholder: "e.g., 27513" },
     { key: "phone", label: "Phone", placeholder: "e.g., (919) 555-0123" },
     { key: "website", label: "Website", placeholder: "https://example.com" },
+    { key: "googleShareUrl", label: "Google Maps / Share URL", placeholder: "https://maps.app.goo.gl/...", hint: "Optional for intake" },
+    { key: "menuUrl", label: "Menu URL", placeholder: "https://example.com/menu", hint: "Optional for intake" },
     { key: "cuisineTypes", label: "Cuisine Types", placeholder: "Indian, South Indian, Vegetarian", hint: "Comma-separated" },
     { key: "regionalCuisine", label: "Regional Cuisine", placeholder: "e.g., South Indian, Hyderabadi" },
   ];
@@ -85,6 +131,7 @@ export default function NewRestaurantPage() {
                   </label>
                   <input
                     type="text"
+                    name={f.key}
                     value={(form as any)[f.key]}
                     onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                     placeholder={f.placeholder}
@@ -111,6 +158,7 @@ export default function NewRestaurantPage() {
                   Price Range
                 </label>
                 <select
+                  name="priceRange"
                   value={form.priceRange}
                   onChange={(e) => setForm({ ...form, priceRange: e.target.value })}
                   style={{
@@ -133,11 +181,19 @@ export default function NewRestaurantPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "1.2rem", marginTop: "2.8rem" }}>
-              <Link href="/" className="btn-pearl" style={{ fontSize: "1.4rem" }}>Cancel</Link>
-              <button type="submit" disabled={saving} className="btn-primary" style={{ fontSize: "1.5rem" }}>
-                {saving ? "Creating…" : "Add Restaurant"}
-              </button>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1.2rem", marginTop: "2.8rem", flexWrap: "wrap" }}>
+              <p className="small" style={{ color: "var(--text-soft)", margin: 0 }}>
+                Manual create preserves the existing workflow; intake sends the real restaurant data into audit.
+              </p>
+              <div style={{ display: "flex", gap: "1.2rem" }}>
+                <Link href="/" className="btn-pearl" style={{ fontSize: "1.4rem" }}>Cancel</Link>
+                <button type="button" disabled={intaking} onClick={handleIntake} className="btn-pearl" style={{ fontSize: "1.4rem" }}>
+                  {intaking ? "Intaking…" : "Intake & Audit"}
+                </button>
+                <button type="submit" disabled={saving} className="btn-primary" style={{ fontSize: "1.5rem" }}>
+                  {saving ? "Creating…" : "Add Restaurant"}
+                </button>
+              </div>
             </div>
           </div>
         </form>

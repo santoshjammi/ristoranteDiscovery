@@ -16,6 +16,15 @@ router.get('/health/live', (_req: Request, res: Response) => {
   });
 });
 
+// Alias for clients that still call /api/health/live
+router.get('/api/health/live', (_req: Request, res: Response) => {
+  res.json({
+    status: 'alive',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 // Readiness probe — is the service ready to serve traffic?
 router.get('/health/ready', async (_req: Request, res: Response) => {
   try {
