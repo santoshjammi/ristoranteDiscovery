@@ -11,6 +11,12 @@ import { GenerateReportUseCase } from '../../application/discovery/GenerateRepor
 import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
 import { AuditService } from '../../application/audit/AuditService';
 import { getScorecard } from '../../domain/scorecard/ScorecardService';
+import {
+  determineEnrichment,
+  isChallengePage,
+  hasRealContent,
+  type EnrichmentCandidate,
+} from '../../application/discovery/evidenceEnrichment';
 
 export class DiscoveryController {
   private calculateScore: CalculateScoreUseCase;
@@ -235,6 +241,7 @@ export class DiscoveryController {
     const rankByUrl = new Map(discovered.map(item => [item.url, item.rank] as const));
     const discoveredByUrl = new Map(discovered.map(item => [item.url, item.discoveredBy] as const));
     const out: any[] = [];
+    const enrichmentCandidates: EnrichmentCandidate[] = [];
 
     for (const url of urls) {
       try {
@@ -285,7 +292,14 @@ export class DiscoveryController {
             checksum,
           },
         });
-        out.push({ sourceUrl: url, sourceType, observedAt, confidence: response.ok ? 0.78 : 0.42, normalizedValue: { title, observedMenuHint }, provenance });
+        // Collect ONLY high-confidence, non-challenge pages as enrichment candidates.
+        // Challenge/interstitial/noise pages (Cloudflare, "Just a moment", etc.)
+        // contain no real business content and are never used for enrichment.
+        const confidence = response.ok ? 0.78 : 0.42;
+        if (confidence >= 0.70 && !isChallengePage(title, html)) {
+          enrichmentCandidates.push({ sourceUrl: url, sourceType, confidence, title, html });
+        }
+        out.push({ sourceUrl: url, sourceType, observedAt, confidence, normalizedValue: { title, observedMenuHint }, provenance });
       } catch {
         out.push({ sourceUrl: url, sourceType: this.sourceTypeForUrl(url), status: 'unavailable' });
       }
@@ -295,7 +309,43 @@ export class DiscoveryController {
       out.push({ status: 'pending_observation', reason: 'No public sources found yet', factor: 'source_coverage' });
     }
 
+    // Evidence-grounded structured enrichment (RIST-RDI-002): persist ONLY real,
+    // verifiable signals from high-confidence, non-challenge evidence into the
+    // restaurant profile so the frozen scorecard can honestly move presence-based
+    // factors (website, phone, cuisine, hours) out of Pending. Deterministic,
+    // never fabricated, never overwrites existing real values.
+    if (enrichmentCandidates.length > 0) {
+      await this.enrichRestaurantFromEvidence(restaurantId, input.name || 'Unknown', enrichmentCandidates);
+    }
+
     return out;
+  }
+
+  /**
+   * Persist real, verifiable signals from high-confidence, non-challenge evidence
+   * into the restaurant profile. Deterministic and evidence-grounded — never
+   * fabricates, never extracts from challenge/noise pages, and never overwrites
+   * existing real values. See determineEnrichment in evidenceEnrichment.ts.
+   */
+  private async enrichRestaurantFromEvidence(restaurantId: string, restaurantName: string, candidates: EnrichmentCandidate[]): Promise<void> {
+    const current = await this.prisma.restaurant.findUnique({ where: { id: restaurantId } });
+    if (!current) return;
+
+    const enrichment = determineEnrichment(candidates, restaurantName, {
+      website: current.website,
+      phone: current.phone,
+      cuisineTypes: current.cuisineTypes,
+      timings: current.timings,
+    });
+
+    const data: any = {};
+    if (enrichment.website && !hasRealContent(current.website)) data.website = enrichment.website;
+    if (enrichment.phone && !hasRealContent(current.phone)) data.phone = enrichment.phone;
+    if (enrichment.cuisineTypes && !hasRealContent(current.cuisineTypes)) data.cuisineTypes = JSON.stringify(enrichment.cuisineTypes);
+    if (enrichment.timings && !hasRealContent(current.timings)) data.timings = JSON.stringify(enrichment.timings);
+
+    if (Object.keys(data).length === 0) return;
+    await this.prisma.restaurant.update({ where: { id: restaurantId }, data });
   }
   private async discoverPublicSourceUrls(input: { name?: string; address?: string; city?: string; website?: string; menuUrl?: string }): Promise<Array<{ url: string; query: string; rank: number; discoveredBy: string }>> {
     const queries = this.buildDiscoveryQueries(input);
