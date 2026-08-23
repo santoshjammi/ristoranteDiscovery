@@ -112,3 +112,10 @@ Provider names appear ONLY in infrastructure/ai/providers/ + routing/ + contract
 ## 6. Architectural Invariant (frozen)
 
 > Ristorante is deterministic at its core and AI-augmented at its edges. Application use-cases may request AI capabilities for extraction, interpretation, retrieval, synthesis, explanation, recommendation communication, and conversation. AI does not own scoring arithmetic, public evidence, provenance, historical calculations, benchmark calculations, identity, permissions, or business state transitions. The core Restaurant Discovery Intelligence product remains functional when every AI provider is unavailable.
+
+### Freeze record (Aug 2026)
+
+- **Tag:** `rist-ai-001-frozen` on commit `da81284`.
+- **Hardening completed:** bounded provider timeout (`timeout` kind), operational failure taxonomy, evidence/citation grounding, retrieval isolation, search/chat authorization, menu provenance.
+- **Verification at freeze:** 48/48 backend tests, frontend build green, `hermes verify` ok:true, AI ON==OFF scorecard numerically identical, all-AI-off core endpoints healthy, independent re-evaluation `PASS / P0:0 / P1:0`.
+- **Frozen invariant:** RistoranteDiscovery is deterministic at its core and AI-augmented at its edges. AI may extract, interpret, retrieve, explain, synthesize, and converse over evidence, but it does **not** own canonical public evidence, scoring arithmetic, identity, provenance, benchmarks, trends, permissions, or business-state transitions. The core discovery product remains functional when all AI providers are unavailable.

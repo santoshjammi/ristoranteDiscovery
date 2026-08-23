@@ -34,6 +34,7 @@
 || **Connector Platform** (5 connectors) | ✅ Built | Prisma model, service, API routes, auto-seed, GBP/Zomato/Swiggy/JustDial/TripAdvisor with scorecard factor mapping |
 || **Connector Route Fix** | ✅ Fixed | Removed duplicate old routes in `batch02.routes.ts` that were shadowing the new connector routes |
 || **Billing Page** (Razorpay frontend) | ✅ Built | Full billing page with current plan, plan selection, Razorpay checkout, payment history, cancel flow |
+|| **RIST-AI-001: AI Capability Layer Separation** | ✅ **FROZEN** | Tag `rist-ai-001-frozen` (commit `da81284`). Deterministic core is AI-independent; AI is capability-oriented under `backend/src/infrastructure/ai/`. Timeout, failure taxonomy, citation grounding, retrieval isolation, search auth, menu provenance hardened. 48/48 tests, AI ON==OFF scorecard, all-AI-off core functional. Re-eval `PASS / P0:0 / P1:0`. |
 
 ### Pages Built (27 total)
 
@@ -94,9 +95,10 @@
 
 ## 🎯 Next Actions (Immediate)
 
-1. **Visual regression tests** — Playwright screenshot-based
-2. **Audit report** — Full PDF generation
-3. **Notification system** — email/Slack/Discord alerts
+1. **Real-data path (primary):** Add Restaurant → discover real public evidence → generate the 25-factor discovery scorecard → deploy the RTP showcase. (RIST-AI-001 AI architecture is frozen and closed.)
+2. **Visual regression tests** — Playwright screenshot-based
+3. **Audit report** — Full PDF generation
+4. **Notification system** — email/Slack/Discord alerts
 
 ---
 
