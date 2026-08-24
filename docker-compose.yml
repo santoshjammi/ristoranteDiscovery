@@ -1,46 +1,66 @@
-version: '3.8'
+# ── RistoranteDiscovery — Docker Compose (multi-app VPS shape) ──
+# Runs alongside other Ristorante-family apps on one shared Docker network
+# (appnet) behind host-level NGINX. Ports bind to 127.0.0.1 so NGINX is the
+# sole external ingress. The production dataset is the isolated real-only
+# showcase DB (rtp-showcase.db) — never the synthetic dev.db.
+#
+# Shared network: create once with `docker network create appnet` and have
+# every app's compose join it. Do NOT publish ports to the host for prod.
 
 services:
-  tirde-backend:
+  rdi-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: tirde-backend
+    container_name: rdi-backend
     restart: always
     ports:
-      - "${PORT_BACKEND:-5040}:5001"
+      - "127.0.0.1:${PORT_BACKEND:-5040}:5001"
     volumes:
-      - tirde-data:/app/data
+      - rdi-data:/app/data
     environment:
       - PORT=5001
-      - DATABASE_URL=file:/app/data/dev.db
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NODE_ENV=production
+      # Production dataset = isolated real-only showcase DB (6 real restaurants)
+      - DATABASE_URL=file:/app/data/rtp-showcase.db
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-}
+      - OLLAMA_LIGHT_MODEL=${OLLAMA_LIGHT_MODEL:-}
+      - OLLAMA_COMPLEX_MODEL=${OLLAMA_COMPLEX_MODEL:-}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     networks:
-      - tirde-network
+      - appnet
 
-  tirde-frontend:
+  rdi-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5040/api}
-    container_name: tirde-frontend
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://127.0.0.1:5040/api}
+    container_name: rdi-frontend
     restart: always
     ports:
-      - "${PORT_FRONTEND:-3040}:3000"
+      - "127.0.0.1:${PORT_FRONTEND:-3040}:3000"
     environment:
       - PORT=3000
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5040/api}
+      - NODE_ENV=production
     networks:
-      - tirde-network
+      - appnet
     depends_on:
-      - tirde-backend
+      - rdi-backend
 
 volumes:
-  tirde-data:
-    name: tirde-data
+  rdi-data:
+    name: rdi-data
 
+# Join the shared multi-app network. Create once on the host:
+#   docker network create appnet
 networks:
-  tirde-network:
-    name: tirde-network
+  appnet:
+    external: true
+    name: appnet

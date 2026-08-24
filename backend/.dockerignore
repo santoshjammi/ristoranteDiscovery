@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+prisma/*.db
+prisma/*.db-journal
+!prisma/rtp-showcase.db
+.git
+.env
+.env.*
+!.env.example
+npm-debug.log*
+README.md
+tests
+coverage

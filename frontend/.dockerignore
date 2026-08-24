@@ -1,0 +1,13 @@
+node_modules
+.next
+.next-prod
+out
+dist
+*.db
+*.db-journal
+.git
+.env
+.env.*
+!.env.example
+npm-debug.log*
+README.md
