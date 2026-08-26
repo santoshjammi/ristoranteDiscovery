@@ -12,6 +12,7 @@ async function signUp(page: any, email: string) {
   await page.getByPlaceholder('Organization Name').fill('Test Org');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });
 }
 
 async function addRestaurant(page: any, name: string) {
@@ -177,7 +178,7 @@ test.describe('Restaurant Detail / Scorecard — Comprehensive', () => {
     await page.waitForURL(/\/dashboard\/restaurants\//, { timeout: 5000 });
     await page.getByText('Restaurants').first().click();
     await page.waitForURL('/dashboard/restaurants', { timeout: 5000 });
-    await expect(page.getByRole('heading', { name: 'Restaurants' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Restaurants' })).toBeVisible({ timeout: 15000 });
     // 58 assertions
   });
 

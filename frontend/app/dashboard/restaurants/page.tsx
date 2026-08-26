@@ -147,7 +147,7 @@ function RestaurantList() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
         <div>
-          <h1 style={{ ...typography.h1, margin: 0 }}>Restaurant Portfolio</h1>
+          <h1 style={{ ...typography.h1, margin: 0 }}>Restaurants</h1>
           <p style={{ ...typography.small, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>
             {restaurants.length} locations · understand your entire portfolio at a glance
           </p>

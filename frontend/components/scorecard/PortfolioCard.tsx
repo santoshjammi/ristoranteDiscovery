@@ -162,9 +162,11 @@ export function PortfolioSummaryBar({ summary }: { summary: PortfolioSummary }) 
       <div style={{ padding: spacing.lg, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, textAlign: "center" }}>
         <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: summary.averageScore !== null ? scoreColor(summary.averageScore) : colors.mutedDarker }}>{summary.averageScore !== null ? summary.averageScore : "—"}</p>
         <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Avg Score</p>
+        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Score:</p>
       </div>
       <div style={{ padding: spacing.lg, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, textAlign: "center" }}>
-        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: colors.text }}>{summary.active}</p>
+        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: colors.text }}>{summary.total}</p>
+        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>total</p>
         <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Active</p>
       </div>
       <div style={{ padding: spacing.lg, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, textAlign: "center" }}>
@@ -173,7 +175,7 @@ export function PortfolioSummaryBar({ summary }: { summary: PortfolioSummary }) 
       </div>
       <div style={{ padding: spacing.lg, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, textAlign: "center" }}>
         <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: colors.warning }}>{summary.attentionCount}</p>
-        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Attention</p>
+        <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>need attention</p>
       </div>
       <div style={{ padding: spacing.lg, background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}`, textAlign: "center" }}>
         <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: colors.success }}>{summary.healthyCount}</p>

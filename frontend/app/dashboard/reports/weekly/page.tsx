@@ -91,7 +91,8 @@ function WeeklyIntelligencePage() {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Weekly Intelligence</h1>
-      <p style={{ ...typography.small, margin: `0 0 ${spacing["2xl"]}`, color: colors.muted }}>What changed · What improved · What worsened · What to do next</p>
+      <p style={{ ...typography.small, margin: `0 0 ${spacing.xs}`, color: colors.muted }}>What changed · What improved · What worsened · What to do next</p>
+      <h2 style={{ ...typography.h3, margin: `0 0 ${spacing["2xl"]}`, color: colors.mutedDarker }}>Weekly Report</h2>
 
       {restaurants.length === 0 ? (
         <div style={{ textAlign: "center", padding: spacing["4xl"], background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.border}` }}>

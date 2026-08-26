@@ -65,7 +65,7 @@ async function healthCheck(maxRetries = 3): Promise<boolean> {
   return ok;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, bootstrapSession = true }: { children: ReactNode; bootstrapSession?: boolean }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(getStoredToken);
   const [organization, setOrganization] = useState<Organization | null>(getStoredOrg);

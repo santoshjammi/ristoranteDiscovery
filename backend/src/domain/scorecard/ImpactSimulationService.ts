@@ -95,7 +95,7 @@ export async function simulateImpact(restaurantId: string, factorId: string): Pr
     estimatedScore: estimated,
     expectedGain: estimated - current,
     level: levelFor(current),
-    basis: `Following recommended actions can add up to ~${potential} points. Estimated ${current} → ${estimated}.`,
+    basis: `Following suggested steps can add up to ~${potential} points. Estimated ${current} → ${estimated}.`,
   };
 }
 

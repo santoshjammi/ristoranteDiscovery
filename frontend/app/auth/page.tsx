@@ -1,10 +1,12 @@
 "use client";
 
-import { AuthProvider, useAuth } from "@/app/lib/auth-context";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 
-function SignInForm({ onToggle }: { onToggle: () => void }) {
+import { AuthProvider, useAuth } from "@/app/lib/auth-context";
+
+function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,6 +19,7 @@ function SignInForm({ onToggle }: { onToggle: () => void }) {
     setBusy(true);
     try {
       await signIn(email, password);
+      onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -37,13 +40,19 @@ function SignInForm({ onToggle }: { onToggle: () => void }) {
         {busy ? "Signing in..." : "Sign In"}
       </button>
       <p style={{ fontSize: "0.8125rem", color: "var(--color-muted, #94a3b8)", textAlign: "center", margin: 0 }}>
-        Don't have an account? <button type="button" onClick={onToggle} style={{ background: "none", border: "none", color: "var(--color-primary, #3b82f6)", cursor: "pointer", fontSize: "0.8125rem", padding: 0, textDecoration: "underline" }}>Sign Up</button>
+        Don't have an account?{" "}
+        <Link
+          href="/auth?mode=signup"
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", background: "rgba(59, 130, 246, 0.10)", border: "1px solid rgba(59, 130, 246, 0.25)", color: "var(--color-primary, #3b82f6)", cursor: "pointer", fontSize: "0.8125rem", padding: "0.35rem 0.7rem", borderRadius: "999px", fontWeight: 600, textDecoration: "none" }}
+        >
+          Sign Up
+        </Link>
       </p>
     </form>
   );
 }
 
-function SignUpForm({ onToggle }: { onToggle: () => void }) {
+function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const { signUp, createOrganization } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -59,6 +68,7 @@ function SignUpForm({ onToggle }: { onToggle: () => void }) {
     try {
       await signUp(email, password, name);
       await createOrganization(orgName || `${name}'s Restaurant Group`);
+      onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -83,22 +93,22 @@ function SignUpForm({ onToggle }: { onToggle: () => void }) {
         {busy ? "Creating account..." : "Create Account"}
       </button>
       <p style={{ fontSize: "0.8125rem", color: "var(--color-muted, #94a3b8)", textAlign: "center", margin: 0 }}>
-        Already have an account? <button type="button" onClick={onToggle} style={{ background: "none", border: "none", color: "var(--color-primary, #3b82f6)", cursor: "pointer", fontSize: "0.8125rem", padding: 0, textDecoration: "underline" }}>Sign In</button>
+        Already have an account?{" "}
+        <Link
+          href="/auth"
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", background: "rgba(59, 130, 246, 0.10)", border: "1px solid rgba(59, 130, 246, 0.25)", color: "var(--color-primary, #3b82f6)", cursor: "pointer", fontSize: "0.8125rem", padding: "0.35rem 0.7rem", borderRadius: "999px", fontWeight: 600, textDecoration: "none" }}
+        >
+          Sign In
+        </Link>
       </p>
     </form>
   );
 }
 
-function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const { user } = useAuth();
+function AuthPageContent() {
   const router = useRouter();
-
-  useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
-    }
-  }, [user, router]);
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "signup" ? "signup" : "signin";
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-bg, #0f172a)", padding: "2rem" }}>
@@ -107,12 +117,30 @@ function AuthPage() {
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "var(--color-text, #f1f5f9)" }}>Ristorante</h1>
           <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "var(--color-muted, #94a3b8)" }}>Restaurant Visibility Intelligence</p>
         </div>
-        {mode === "signin" ? <SignInForm onToggle={() => setMode("signup")} /> : <SignUpForm onToggle={() => setMode("signin")} />}
+        {mode === "signin" ? (
+          <SignInForm onSuccess={() => router.push('/dashboard')} />
+        ) : (
+          <SignUpForm onSuccess={() => router.push('/dashboard')} />
+        )}
       </div>
     </div>
   );
 }
 
+function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-bg, #0f172a)", color: "var(--color-muted, #94a3b8)" }}>
+          Loading…
+        </div>
+      }
+    >
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
 export default function AuthWrapper() {
-  return <AuthProvider><AuthPage /></AuthProvider>;
+  return <AuthProvider bootstrapSession={false}><AuthPage /></AuthProvider>;
 }

@@ -205,20 +205,12 @@ test.describe('Learn Page', () => {
 
 test.describe('Admin Page', () => {
   test('Page loads with heading', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByPlaceholder('Email').fill('admin@ristorante.app');
-    await page.getByPlaceholder('Password').fill('admin123');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+    await signUp(page, `adm1-${Date.now()}@example.com`);
     await page.goto('/admin');
     await expect(page.getByText('Admin Dashboard').first()).toBeVisible({ timeout: 10000 });
   });
   test('Stat cards visible', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByPlaceholder('Email').fill('admin@ristorante.app');
-    await page.getByPlaceholder('Password').fill('admin123');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+    await signUp(page, `adm2-${Date.now()}@example.com`);
     await page.goto('/admin');
     await expect(page.getByText('Total Restaurants').first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Total Users').first()).toBeVisible();
@@ -228,11 +220,7 @@ test.describe('Admin Page', () => {
     await expect(page.getByText('Healthy').first()).toBeVisible();
   });
   test('System section visible', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByPlaceholder('Email').fill('admin@ristorante.app');
-    await page.getByPlaceholder('Password').fill('admin123');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+    await signUp(page, `adm3-${Date.now()}@example.com`);
     await page.goto('/admin');
     await expect(page.getByText('System').first()).toBeVisible({ timeout: 10000 });
   });

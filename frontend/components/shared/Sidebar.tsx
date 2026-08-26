@@ -119,6 +119,7 @@ export function Sidebar({ user, organization, token, onSignOut }: { user: any; o
 
   return (
     <div
+      className="workspace-sidebar"
       style={{
         width: 280,
         minHeight: "100vh",

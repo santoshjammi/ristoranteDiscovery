@@ -171,7 +171,7 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
       {!isPending && (
         <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.xs }}>
           {factor.trend && <span style={{ ...typography.caption, color: factor.trend === 'up' ? colors.success : factor.trend === 'down' ? colors.danger : colors.muted }}>{factor.trend === 'up' ? '↑' : factor.trend === 'down' ? '↓' : '→'}</span>}
-          {factor.confidence !== null && <span style={{ ...typography.caption, color: colors.muted }}>{factor.confidence}% conf</span>}
+          {factor.confidence !== null && <span style={{ ...typography.caption, color: colors.muted }}>{factor.confidence}% confidence</span>}
           {factor.evidenceCount > 0 && <span style={{ ...typography.caption, color: colors.muted }}>{factor.evidenceCount} sources</span>}
           {freshness && <span style={{ ...typography.caption, color: colors.muted }}>· {freshness}</span>}
         </div>
@@ -183,6 +183,23 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
       {/* Expandable sub-signals */}
       {expanded && (
         <div style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTop: `1px solid ${colors.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.sm }}>
+            <button type="button" aria-label="✕" onClick={(e) => { e.stopPropagation(); onToggle(factor.id); }} style={{ border: "none", background: "transparent", color: colors.mutedDarker, cursor: "pointer", fontSize: "1rem", padding: 0 }}>✕</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing.sm, marginBottom: spacing.md }}>
+            <div style={{ padding: spacing.sm, background: colors.bg, borderRadius: radius.md }}>
+              <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Current Score</p>
+              <p style={{ margin: `${spacing.xs} 0 0`, fontSize: '1rem', fontWeight: 700, color: colors.text }}>{factor.score !== null ? factor.score : '—'}</p>
+            </div>
+            <div style={{ padding: spacing.sm, background: colors.bg, borderRadius: radius.md }}>
+              <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Business Impact</p>
+              <p style={{ margin: `${spacing.xs} 0 0`, fontSize: '0.75rem', color: colors.text }}>{factor.businessImpact}</p>
+            </div>
+            <div style={{ padding: spacing.sm, background: colors.bg, borderRadius: radius.md }}>
+              <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Expected Improvement</p>
+              <p style={{ margin: `${spacing.xs} 0 0`, fontSize: '0.75rem', color: colors.text }}>{factor.expectedImprovement}</p>
+            </div>
+          </div>
           {factor.subSignals.length > 0 ? (
             <>
               <p style={{ ...typography.caption, margin: `0 0 ${spacing.sm}`, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Sub-Signals</p>
@@ -236,7 +253,7 @@ export function ProblemFactors({ factors, onSelect }: {
   if (problems.length === 0) return null;
   return (
     <div style={{ padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.dangerLight}` }}>
-      <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}`, color: colors.danger }}>⚠️ Top Problem Factors</h3>
+      <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}`, color: colors.danger }}>⚠️ Priority Opportunities</h3>
       <p style={{ ...typography.small, margin: `0 0 ${spacing.lg}`, color: colors.mutedDarker }}>
         These factors are holding back your score the most. Fixing them delivers the fastest improvement.
       </p>
@@ -277,6 +294,9 @@ export function PendingFactors({ factors, onSelect }: {
             onClick={() => onSelect(f.id)}>
             <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: colors.text }}>{f.name}</p>
             <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>{f.description}</p>
+            {f.subSignals.length > 0 && (
+              <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>Signals: {f.subSignals.map((s) => s.name).join(', ')}</p>
+            )}
             {f.connectorRequired && (
               <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker, fontStyle: 'italic' }}>Requires: {f.connectorRequired}</p>
             )}

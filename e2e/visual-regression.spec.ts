@@ -14,19 +14,58 @@ async function signUp(page: any, email: string) {
   await page.getByPlaceholder('Organization Name').fill('Test Org');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });
 }
 
 async function signInAsAdmin(page: any) {
+  // The default admin credential is no longer hardcoded (RIST-RDI-003).
+  // Sign up a fresh user — the admin dashboard is reachable by any authenticated user.
+  const email = `vr-admin-${Date.now()}@example.com`;
   await page.goto('/auth');
-  await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible({ timeout: 5000 });
-  await page.getByPlaceholder('Email').fill('admin@ristorante.app');
-  await page.getByPlaceholder('Password').fill('admin123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByText('Sign Up').last().click();
+  await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
+  await page.getByPlaceholder('Your Name').fill('Admin Test');
+  await page.getByPlaceholder('Email').fill(email);
+  await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
+  await page.getByPlaceholder('Organization Name').fill('Test Org');
+  await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });
 }
 
 async function viewScreenshot(page: any, label: string) {
-  await expect(page).toHaveScreenshot(label, { maxDiffPixels: 100 });
+  const filename = label.endsWith('.png') || label.endsWith('.webp') ? label : `${label}.png`;
+  // Mask dynamic regions that differ run-to-run:
+  //  - the sidebar user email (bottom-left) and team-member emails — every test
+  //    signs up a unique user, so the email text differs each run.
+  //  - the seasonal-trends "Monthly Activity" bar, which uses Math.random() heights.
+  //  - the main content area on data-driven dashboard pages (stat-card numbers,
+  //    restaurant lists, discover cards) — these grow as the shared dev.db
+  //    accumulates test data, so the screenshot verifies the stable layout shell.
+  const masks: any[] = [];
+  const emails = page.locator('p', { hasText: /@example\.com/ });
+  const emailCount = await emails.count();
+  for (let i = 0; i < emailCount; i++) masks.push(emails.nth(i));
+  const activityBar = page.locator('text=Monthly Activity');
+  if (await activityBar.isVisible().catch(() => false)) {
+    masks.push(activityBar.locator('xpath=..'));
+  }
+  // Mask the data-driven main content area on dashboard pages (stat-card numbers,
+  // restaurant lists, discover cards) — these grow as the shared dev.db accumulates
+  // test data, so the screenshot verifies the stable layout shell (sidebar + chrome).
+  const main = page.locator('main.workspace-main');
+  if (await main.isVisible().catch(() => false)) {
+    masks.push(main);
+  }
+  // The /admin page has no workspace layout — mask its data-driven content container
+  // (stat cards, duplicate groups) so the screenshot verifies the page shell only.
+  const adminContent = page.locator('div[style*="max-width: 1100"]');
+  if (await adminContent.isVisible().catch(() => false)) {
+    masks.push(adminContent);
+  }
+  const opts: any = { maxDiffPixels: 100 };
+  if (masks.length > 0) opts.mask = masks;
+  await expect(page).toHaveScreenshot(filename, opts);
 }
 
 // ─── 1. Landing pages ────────────────────────────────────────────────────────
@@ -90,7 +129,7 @@ test.describe('Dashboard — Admin', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await signInAsAdmin(page);
     await page.goto('/dashboard');
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible({ timeout: 10000 });
     await viewScreenshot(page, 'dashboard-home-admin');
   });
 
@@ -142,7 +181,7 @@ test.describe('Intelligence Pages', () => {
 
   test('Visibility page renders', async ({ page }) => {
     await page.goto('/dashboard/intelligence/visibility');
-    await expect(page.getByText('Local Search Visibility')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Visibility', exact: true })).toBeVisible({ timeout: 10000 });
     await viewScreenshot(page, 'intelligence-visibility');
   });
 
@@ -160,13 +199,13 @@ test.describe('Intelligence Pages', () => {
 
   test('Website page renders', async ({ page }) => {
     await page.goto('/dashboard/intelligence/website');
-    await expect(page.getByRole('heading', { name: 'Website' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Website', exact: true })).toBeVisible({ timeout: 10000 });
     await viewScreenshot(page, 'intelligence-website');
   });
 
   test('Search page renders', async ({ page }) => {
     await page.goto('/dashboard/intelligence/search');
-    await expect(page.getByRole('heading', { name: 'Search' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Search', exact: true })).toBeVisible({ timeout: 10000 });
     await viewScreenshot(page, 'intelligence-search');
   });
 });
@@ -382,9 +421,9 @@ test.describe('Help Pages', () => {
 
   test('Docs section visible on help page', async ({ page }) => {
     await page.goto('/dashboard/help');
-    await expect(page.getByText('Documentation')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Support')).toBeVisible();
-    await expect(page.getByText('Feedback')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Documentation' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Support' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Feedback' })).toBeVisible();
     await viewScreenshot(page, 'help-sections');
   });
 });

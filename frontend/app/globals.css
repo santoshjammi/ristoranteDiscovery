@@ -274,4 +274,7 @@ body {
   .global-nav { height: 6.4rem; }
   .global-nav-links { display: none; }
   .feature-band { padding: var(--space-4) 0; }
+  .workspace-shell { display: block !important; }
+  .workspace-sidebar { display: none !important; }
+  .workspace-main { padding: 2rem !important; max-width: none !important; }
 }

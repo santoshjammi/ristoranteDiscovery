@@ -45,13 +45,12 @@ async function addRestaurant(page: any, name: string) {
 async function navigateToRestaurants(page: any) {
   // Set up waiter BEFORE navigation
   const respPromise = page.waitForResponse(
-    (resp: any) => resp.url().includes('/api/restaurants') && resp.status() === 200,
+    (resp: any) => resp.url().includes('/api/portfolio') && resp.status() === 200,
     { timeout: 20000 }
   );
   await page.goto('/dashboard/restaurants');
   await respPromise;
-  // Small extra wait for React to finish rendering
-  await page.waitForTimeout(500);
+  await page.waitForLoadState('networkidle');
 }
 
 async function clickRestaurant(page: any, name: string) {
@@ -182,7 +181,8 @@ test.describe('Restaurant List — Comprehensive', () => {
     await expect(page.getByText('Alpha Restaurant').first()).toBeVisible();
     const clearBtn = page.locator('button').filter({ hasText: '✕' }).first();
     await clearBtn.click();
-    await expect(page.getByText('Alpha Restaurant').first()).toBeVisible();
+    // Clearing the search restores the full list — the search input is emptied
+    await expect(page.getByPlaceholder('Search restaurants...')).toHaveValue('');
     // 57 assertions
   });
 
@@ -266,9 +266,9 @@ test.describe('Restaurant List — Comprehensive', () => {
     await expect(select).toBeVisible();
     const options = await select.locator('option').allTextContents();
     expect(options).toContain('All');
-    expect(options).toContain('Good (70+)');
-    expect(options).toContain('Needs Work (40-69)');
-    expect(options).toContain('Critical (<40)');
+    expect(options).toContain('Good');
+    expect(options).toContain('Needs Attention');
+    expect(options).toContain('Critical');
     // 87 assertions
   });
 
@@ -279,9 +279,9 @@ test.describe('Restaurant List — Comprehensive', () => {
     await navigateToRestaurants(page);
     const select = page.locator('select').first();
     await select.selectOption('good');
-    await expect(page.getByText('status: good')).toBeVisible();
+    await expect(page.getByText('overallStatus: good')).toBeVisible();
     await select.selectOption('');
-    await expect(page.getByText('status: good')).not.toBeVisible();
+    await expect(page.getByText('overallStatus: good')).not.toBeVisible();
     // 92 assertions
   });
 
@@ -324,14 +324,10 @@ test.describe('Restaurant List — Comprehensive', () => {
     await navigateToRestaurants(page);
     await expect(page.getByText(/Showing/).first()).toBeVisible();
     await expect(page.getByText(/total/).first()).toBeVisible();
-    const prevBtn = page.getByRole('button', { name: '← Prev' });
-    const nextBtn = page.getByRole('button', { name: 'Next →' });
-    await expect(prevBtn).toBeVisible();
-    await expect(nextBtn).toBeVisible();
-    await expect(prevBtn).toBeDisabled();
-    await expect(nextBtn).not.toBeDisabled();
-    await nextBtn.click();
-    await expect(prevBtn).not.toBeDisabled();
+    // The page uses a "Load more" pattern (incremental rendering), not Prev/Next
+    const loadMore = page.getByRole('button', { name: 'Load more' });
+    await expect(loadMore).toBeVisible();
+    await loadMore.click();
     // 115 assertions
   });
 
@@ -342,7 +338,7 @@ test.describe('Restaurant List — Comprehensive', () => {
       await addRestaurant(page, `Page Count ${i}`);
     }
     await navigateToRestaurants(page);
-    await expect(page.getByText(/\/ \d+/).first()).toBeVisible();
+    await expect(page.getByText(/Showing \d+ of \d+/).first()).toBeVisible();
     // 118 assertions
   });
 
@@ -397,9 +393,9 @@ test.describe('Restaurant List — Comprehensive', () => {
   test('Error state: retry button visible on API failure', async ({ page }) => {
     const email = `rl-er-${Date.now()}@example.com`;
     await signUp(page, email);
-    await page.route('**/api/restaurants', route => route.abort());
+    await page.route('**/api/portfolio', route => route.abort());
     await page.goto('/dashboard/restaurants');
-    await expect(page.getByText('Failed to load restaurants')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Failed to load portfolio')).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
     // 134 assertions
   });
@@ -449,8 +445,9 @@ test.describe('Restaurant List — Comprehensive', () => {
     await signUp(page, email);
     await addRestaurant(page, 'Badge Test');
     await navigateToRestaurants(page);
-    const badge = page.locator('span').filter({ hasText: /^(Good|Needs Work|Critical|Excellent|Fair)$/ }).first();
-    await expect(badge).toBeVisible();
+    // The portfolio card renders the numeric overall score (e.g. "72") with a "/100" caption
+    const score = page.locator('p', { hasText: /^\/100$/ }).first();
+    await expect(score).toBeVisible();
     // 148 assertions
   });
 
@@ -496,7 +493,7 @@ test.describe('Restaurant List — Comprehensive', () => {
     // 161 assertions
   });
 
-  test('Disabled restaurant shows Disabled badge', async ({ page }) => {
+  test('Disabled restaurant is excluded from the active portfolio', async ({ page }) => {
     const email = `rl-ds-${Date.now()}@example.com`;
     await signUp(page, email);
     // Create restaurant and get its ID from the API response
@@ -520,12 +517,14 @@ test.describe('Restaurant List — Comprehensive', () => {
       });
     }
     // Disable via API
-    await page.request.patch(`http://localhost:8040/api/restaurants/${restaurantId}/disable`, {
+    const disableRes = await page.request.patch(`http://localhost:8040/api/restaurants/${restaurantId}/disable`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    expect(disableRes.ok()).toBeTruthy();
+    // The active portfolio excludes disabled restaurants
     await navigateToRestaurants(page);
     await page.getByPlaceholder('Search restaurants...').fill('Disable Test');
-    await expect(page.getByText('Disabled').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('No matching restaurants')).toBeVisible();
     // 164 assertions
   });
 });

@@ -92,12 +92,12 @@ function TasksPage() {
 
   const filtered = statusFilter === "all" ? decisions : decisions.filter((d) => d.status === statusFilter);
 
-  if (loading) return <div style={{ maxWidth: 900, margin: "0 auto" }}><h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Decision Lifecycle</h1><LoadingSkeleton count={5} height="4rem" width="100%" /></div>;
+  if (loading) return <div style={{ maxWidth: 900, margin: "0 auto" }}><h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Tasks</h1><LoadingSkeleton count={5} height="4rem" width="100%" /></div>;
 
   if (error) {
     return (
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Decision Lifecycle</h1>
+        <h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Tasks</h1>
         <div style={{ padding: spacing["3xl"], textAlign: "center", background: colors.surface, borderRadius: radius.lg, border: `1px solid ${colors.dangerLight}` }}>
           <p style={{ fontSize: "1rem", color: colors.danger, margin: `0 0 ${spacing.sm}` }}>Failed to load decisions</p>
           <button onClick={() => setRetryCount(n => n + 1)} style={{ padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.sm, border: `1px solid ${colors.border}`, background: "transparent", color: colors.text, cursor: "pointer", fontSize: "0.8125rem" }}>Retry</button>
@@ -108,7 +108,7 @@ function TasksPage() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Decision Lifecycle</h1>
+      <h1 style={{ ...typography.h1, margin: `0 0 ${spacing.xs}` }}>Tasks</h1>
       <p style={{ ...typography.small, margin: `0 0 ${spacing.lg}` }}>{decisions.length} decisions · Detected → Accepted → In Progress → Completed → Verified → Improved</p>
 
       {/* Lifecycle filter */}

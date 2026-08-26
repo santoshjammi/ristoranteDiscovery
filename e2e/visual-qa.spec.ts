@@ -61,7 +61,7 @@ test.describe('Visual QA — cross-device regression', () => {
     await addRestaurant(page, 'Visual QA Portfolio');
     await page.goto('/dashboard/restaurants');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: 'Restaurant Portfolio' })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('heading', { name: 'Restaurants' })).toBeVisible({ timeout: 30000 });
     await page.waitForTimeout(2000);
 
     await page.setViewportSize({ width: 1440, height: 900 });

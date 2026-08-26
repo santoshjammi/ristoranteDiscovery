@@ -1,12 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const env = (globalThis as any).process?.env ?? {};
+
 export default defineConfig({
   testDir: '.',
   testMatch: ['**/*.spec.ts'],
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  forbidOnly: !!env.CI,
+  retries: env.CI ? 2 : 0,
+  workers: env.CI ? 1 : undefined,
   reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: 'http://localhost:3040',
@@ -27,10 +29,10 @@ export default defineConfig({
       timeout: 30000,
     },
     {
-      command: 'cd ../frontend && npx next dev --port 3040',
+      command: 'cd ../frontend && npm run build && npm run start -- --port 3040',
       port: 3040,
       reuseExistingServer: !process.env.CI,
-      timeout: 30000,
+      timeout: 120000,
     },
   ],
 });

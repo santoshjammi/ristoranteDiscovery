@@ -32,7 +32,7 @@ export function ImpactSimulator({ impacts }: { impacts: ImpactSimulation[] }) {
     <div style={{ padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.border}` }}>
       <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.xs}` }}>Impact Simulation</h3>
       <p style={{ ...typography.caption, margin: `0 0 ${spacing.lg}`, color: colors.mutedDarker }}>
-        Estimated score gain if you follow each factor's recommended actions.
+        Estimated score gain if you follow each factor's suggested steps.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: spacing.md }}>
         {sorted.map((s) => (

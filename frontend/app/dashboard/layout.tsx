@@ -36,9 +36,9 @@ function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: colors.bg }}>
+    <div className="workspace-shell" style={{ display: "flex", minHeight: "100vh", background: colors.bg }}>
       <Sidebar user={user} organization={organization} token={token} onSignOut={signOut} />
-      <main style={{ flex: 1, padding: "3.6rem", overflow: "auto", maxWidth: 1440 }}>
+      <main className="workspace-main" style={{ flex: 1, padding: "3.6rem", overflow: "auto", maxWidth: 1440 }}>
         {children}
       </main>
     </div>
