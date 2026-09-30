@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/lib/auth-context";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 export default function ConnectDataPanel({ restaurantId }: { restaurantId: string }) {
   const { token } = useAuth();

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const PWD = 'TestPass123!';
-const signUp = async (page: any, e: string) => { await page.goto('/auth'); await page.getByText('Sign Up').last().click(); await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 }); await page.getByPlaceholder('Your Name').fill('TU'); await page.getByPlaceholder('Email').fill(e); await page.getByPlaceholder('Password').fill(PWD); await page.getByPlaceholder('Organization Name').fill('TO'); await page.getByRole('button', { name: 'Create Account' }).click(); await page.waitForURL(/\/dashboard/, { timeout: 10000 }); };
+const signUp = async (page: any, e: string) => { await page.goto('/auth'); await page.getByText('Sign Up').last().click(); await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 }); await page.getByPlaceholder('Your Name').fill('TU'); await page.getByPlaceholder('Email').fill(e); await page.getByPlaceholder('Password').fill(PWD); await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence-comprehensive'); await page.getByRole('button', { name: 'Create Account' }).click(); await page.waitForURL(/\/dashboard/, { timeout: 10000 }); };
 const addR = async (page: any, n: string) => {
   const token = await page.evaluate(() => localStorage.getItem('rdi_token'));
   if (!token) return;

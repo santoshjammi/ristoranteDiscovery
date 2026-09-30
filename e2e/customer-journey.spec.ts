@@ -155,8 +155,10 @@ test.describe('Full Customer Journey', () => {
     await page.waitForURL(/\/dashboard\/restaurants\//, { timeout: 5000 });
 
     // Scorecard shows factor detail on click
-    await expect(page.getByText('Google Business Profile').first()).toBeVisible({ timeout: 10000 });
-    await page.getByText('Google Business Profile').first().click();
+    // The factor card is the clickable element carrying the name + a % confidence
+    // caption (prose in provenance panels also mentions "Google Business Profile").
+    await expect(page.locator('div[style*="cursor: pointer"]').filter({ hasText: 'Google Business Profile' }).filter({ hasText: '% confidence' }).first()).toBeVisible({ timeout: 10000 });
+    await page.locator('div[style*="cursor: pointer"]').filter({ hasText: 'Google Business Profile' }).filter({ hasText: '% confidence' }).first().click();
     await expect(page.getByText('Current Score')).toBeVisible();
     await expect(page.getByText('Business Impact')).toBeVisible();
     await expect(page.getByText('Expected Improvement')).toBeVisible();

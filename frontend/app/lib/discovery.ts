@@ -1,7 +1,7 @@
 // Discovery API — RVS-001 endpoints
 // Extends the existing api.ts with discovery-specific calls
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API_URL } from "@/app/lib/api-config";
 
 export interface ScoreDimensionData {
   name: string;
@@ -26,6 +26,82 @@ export interface EvidenceData {
     field: string;
     value: string;
   };
+}
+
+// ── Real-data provenance (RIST-RDI-005) ──
+// The customer-facing "prove it" surface. Each row is a REAL, live public
+// source behind a score — clickable URL, source type, observed-at timestamp,
+// and confidence. No synthetic/mock data ever reaches this list.
+
+export interface ProvenanceEvidence {
+  id: string;
+  sourceUrl: string;
+  sourceType: string;
+  sourceTypeLabel: string;
+  observedAt: string;
+  confidence: number;
+  status: string;
+}
+
+export interface ProvenanceData {
+  restaurantId: string;
+  restaurantName: string;
+  evidence: ProvenanceEvidence[];
+  count: number;
+  lastVerified: string | null;
+}
+
+export async function fetchEvidence(restaurantId: string): Promise<ProvenanceData> {
+  const res = await fetch(`${API_URL}/api/restaurants/${restaurantId}/evidence`);
+  if (!res.ok) throw new Error("Failed to load evidence");
+  const json = await res.json();
+  return json.data;
+}
+
+// ── On-demand "Scan All Data" (RIST-RDI-006) ──
+// Re-scans a restaurant by stored name/address (+ optional GBP URL) and
+// returns every discovered source grouped by category, plus a Data Integrity
+// summary (real vs pending vs synthetic).
+
+export type ScanSourceStatus = "real" | "synthetic" | "pending" | "noise" | "unavailable";
+
+export interface ScanSource {
+  sourceUrl: string;
+  sourceType: string;
+  sourceTypeLabel: string;
+  observedAt: string | null;
+  confidence: number | null;
+  status: ScanSourceStatus;
+  category: string;
+  normalizedValue?: { title?: string; observedMenuHint?: string } | null;
+  provenance?: Record<string, unknown> | null;
+}
+
+export interface ScanIntegrity {
+  real: number;
+  pending: number;
+  unavailable: number;
+  synthetic: number;
+}
+
+export interface ScanResult {
+  restaurantId: string;
+  restaurantName: string;
+  scannedAt: string;
+  integrity: ScanIntegrity;
+  groups: Record<string, ScanSource[]>;
+  total: number;
+}
+
+export async function scanRestaurant(restaurantId: string, googleShareUrl?: string): Promise<ScanResult> {
+  const res = await fetch(`${API_URL}/api/discovery/restaurants/${restaurantId}/scan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(googleShareUrl ? { googleShareUrl } : {}),
+  });
+  if (!res.ok) throw new Error("Failed to scan restaurant data");
+  const json = await res.json();
+  return json.data;
 }
 
 export interface RecommendationData {

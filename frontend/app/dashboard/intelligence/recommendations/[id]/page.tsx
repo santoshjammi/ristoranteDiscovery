@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { colors, spacing, radius, typography, scoreColor, severityColor, severityLabel } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 interface DecisionDetail {
   id: string;

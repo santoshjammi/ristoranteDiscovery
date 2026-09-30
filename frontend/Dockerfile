@@ -27,5 +27,12 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/.next-prod/standalone ./
 COPY --from=builder /app/.next-prod/static ./.next-prod/static
 
+# Run as a non-root user (container hardening). The standalone output is
+# self-contained; make it owned by the app user so it can serve without root.
+RUN addgroup -S -g 1001 appgroup && adduser -S -u 1001 -G appgroup appuser \
+  && chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 3000
 CMD ["node", "server.js"]

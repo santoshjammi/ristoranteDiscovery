@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { colors, spacing, radius } from "@/lib/design-tokens";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 interface SearchResult {
   id: string;

@@ -12,6 +12,9 @@ router.post('/intake', controller.intake);
 // Analyze a restaurant: evidence → scores → recommendations → report
 router.post('/restaurants/:id/analyze', controller.analyze);
 
+// Scan all available public data for a restaurant (on-demand, grouped results)
+router.post('/restaurants/:id/scan', controller.scan);
+
 // Get the current Digital Twin state
 router.get('/restaurants/:id/twin', controller.getTwin);
 

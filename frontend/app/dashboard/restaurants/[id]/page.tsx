@@ -12,8 +12,11 @@ import { EvidenceTimeline, type TimelineEvent } from "@/components/scorecard/Evi
 import { ImpactSimulator, type ImpactSimulation } from "@/components/scorecard/ImpactSimulator";
 import { ComparisonView, type RestaurantComparison } from "@/components/scorecard/ComparisonView";
 import { CrossFactorView, type CrossFactorReport } from "@/components/scorecard/CrossFactorView";
+import { DataProvenancePanel } from "@/components/evidence/DataProvenancePanel";
+import { DataScanPanel } from "@/components/evidence/DataScanPanel";
+import { fetchEvidence, type ProvenanceData } from "@/app/lib/discovery";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 const benchmarkLabelMap: Record<BenchmarkDimension, string> = {
   city: "City",
@@ -32,7 +35,9 @@ function ScorecardPage() {
   const [selectedFactor, setSelectedFactor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("name");
+  const [advancedFilter, setAdvancedFilter] = useState<"all" | "low_confidence" | "incomplete_coverage" | "stale_evidence">("all");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("score_asc");
   const [history, setHistory] = useState<SnapshotHistory | null>(null);
   const [historyRange, setHistoryRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([]);
@@ -41,6 +46,8 @@ function ScorecardPage() {
   const [impacts, setImpacts] = useState<ImpactSimulation[]>([]);
   const [comparison, setComparison] = useState<RestaurantComparison | null>(null);
   const [crossFactor, setCrossFactor] = useState<CrossFactorReport | null>(null);
+  const [provenance, setProvenance] = useState<ProvenanceData | null>(null);
+  const [provenanceLoading, setProvenanceLoading] = useState(true);
 
   const factorNameById = scorecard
     ? scorecard.categories.flatMap((c) => c.factors).reduce<Record<string, string>>((acc, f) => {
@@ -136,13 +143,26 @@ function ScorecardPage() {
     if (!token || !params.id) return;
     try {
       const res = await fetch(`${API}/api/restaurants/${params.id}/scorecard/relationships`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
       });
       if (res.ok) {
         const data = await res.json();
         setCrossFactor(data.data);
       }
     } catch {}
+  };
+
+  const fetchProvenance = async () => {
+    if (!params.id) return;
+    setProvenanceLoading(true);
+    try {
+      const data = await fetchEvidence(String(params.id));
+      setProvenance(data);
+    } catch {
+      setProvenance(null);
+    } finally {
+      setProvenanceLoading(false);
+    }
   };
 
   const downloadPDF = async () => {
@@ -171,6 +191,7 @@ function ScorecardPage() {
   useEffect(() => { fetchImpacts(); }, [token, params.id]);
   useEffect(() => { fetchComparison(); }, [token, params.id]);
   useEffect(() => { fetchCrossFactor(); }, [token, params.id]);
+  useEffect(() => { fetchProvenance(); }, [params.id]);
 
   if (loading) {
     return (
@@ -200,18 +221,44 @@ function ScorecardPage() {
   const pendingFactors = allFactors.filter((f) => f.status === "pending_observation");
 
   const filteredFactors = allFactors.filter((f) => {
-    if (searchQuery && !f.name.toLowerCase().includes(searchQuery.toLowerCase()) && !f.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const nameMatch = f.name.toLowerCase().includes(q);
+      const descMatch = f.description.toLowerCase().includes(q);
+      // spec §30: search also matches signal.key and signal.label
+      const signalMatch = (f.signals ?? []).some(
+        (s) => s.signalKey?.toLowerCase().includes(q) || s.label?.toLowerCase().includes(q)
+      );
+      if (!nameMatch && !descMatch && !signalMatch) return false;
+    }
     if (statusFilter !== "all" && f.status !== statusFilter) return false;
+    // Secondary advanced filters (spec §32)
+    if (advancedFilter === "low_confidence" && !(f.status !== "pending_observation" && f.confidence !== null && f.confidence < 60)) return false;
+    if (advancedFilter === "incomplete_coverage" && !(f.status !== "pending_observation" && f.totalSignalCount !== undefined && f.totalSignalCount > 0 && (f.measuredSignalCount ?? 0) < f.totalSignalCount)) return false;
+    if (advancedFilter === "stale_evidence" && !((f.staleCount ?? 0) > 0)) return false;
     return true;
   }).sort((a, b) => {
-    if (sortBy === "score") return (b.score ?? -1) - (a.score ?? -1);
-    if (sortBy === "status") return a.status.localeCompare(b.status);
-    if (sortBy === "category") {
-      const ca = scorecard.categories.find((c) => c.factors.some((f) => f.id === a.id));
-      const cb = scorecard.categories.find((c) => c.factors.some((f) => f.id === b.id));
-      return (ca?.name ?? "").localeCompare(cb?.name ?? "");
+    // spec §31: default = lowest score / greatest attention first
+    switch (sortBy) {
+      case "score_high":
+        return (b.score ?? -1) - (a.score ?? -1);
+      case "conf_low":
+        return (a.confidence ?? 101) - (b.confidence ?? 101);
+      case "evidence":
+        return (b.evidenceCount ?? 0) - (a.evidenceCount ?? 0);
+      case "pending":
+        return (b.pendingSignalCount ?? 0) - (a.pendingSignalCount ?? 0);
+      case "category": {
+        const ca = scorecard.categories.find((c) => c.factors.some((f) => f.id === a.id));
+        const cb = scorecard.categories.find((c) => c.factors.some((f) => f.id === b.id));
+        return (ca?.name ?? "").localeCompare(cb?.name ?? "");
+      }
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "score_asc":
+      default:
+        return (a.score ?? 101) - (b.score ?? 101);
     }
-    return a.name.localeCompare(b.name);
   });
 
   const selectedFactorData = selectedFactor ? allFactors.find((f) => f.id === selectedFactor) : null;
@@ -233,6 +280,16 @@ function ScorecardPage() {
 
       {/* 1. Overall Restaurant Intelligence Score */}
       <MasterScore score={scorecard.overallScore} status={scorecard.overallStatus} liveFactors={scorecard.liveFactors} totalFactors={scorecard.totalFactors} lastUpdated={scorecard.lastUpdated} />
+
+      {/* 1b. Real-data provenance — the "prove it" surface */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <DataProvenancePanel data={provenance} loading={provenanceLoading} />
+      </div>
+
+      {/* 1c. On-demand scan — discover all available public data */}
+      <div style={{ marginTop: spacing["2xl"] }}>
+        <DataScanPanel restaurantId={String(params.id)} />
+      </div>
 
       {/* 2. Five category scores */}
       <div style={{ marginTop: spacing["2xl"] }}>
@@ -326,12 +383,41 @@ function ScorecardPage() {
             padding: `${spacing.sm} ${spacing.md}`, borderRadius: radius.md, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: "0.8125rem", cursor: "pointer",
           }}
         >
-          <option value="name">Sort: Name</option>
-          <option value="score">Sort: Score</option>
-          <option value="status">Sort: Status</option>
+          <option value="score_asc">Sort: Lowest score</option>
+          <option value="score_high">Sort: Highest score</option>
+          <option value="conf_low">Sort: Lowest confidence</option>
+          <option value="evidence">Sort: Most evidence</option>
+          <option value="pending">Sort: Most pending</option>
           <option value="category">Sort: Category</option>
+          <option value="name">Sort: Alphabetical</option>
         </select>
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          style={{
+            padding: `${spacing.sm} ${spacing.md}`, borderRadius: radius.md, border: `1px solid ${colors.borderLight}`, background: "transparent", color: colors.muted, fontSize: "0.75rem", cursor: "pointer",
+          }}
+        >
+          Advanced {showAdvanced ? "▾" : "▸"}
+        </button>
       </div>
+      {/* Secondary advanced filters (spec §32) — collapsed/section, kept secondary */}
+      {showAdvanced && (
+        <div style={{ display: "flex", gap: spacing.md, alignItems: "center", marginBottom: spacing.lg, flexWrap: "wrap" }}>
+          <select
+            value={advancedFilter}
+            onChange={(e) => setAdvancedFilter(e.target.value as any)}
+            style={{
+              padding: `${spacing.sm} ${spacing.md}`, borderRadius: radius.md, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: "0.75rem", cursor: "pointer",
+            }}
+          >
+            <option value="all">All factors</option>
+            <option value="low_confidence">Low Confidence</option>
+            <option value="incomplete_coverage">Incomplete Coverage</option>
+            <option value="stale_evidence">Stale Evidence</option>
+          </select>
+          <span style={{ ...typography.caption, color: colors.mutedDarker }}>Advanced filters help you spot signals that need attention.</span>
+        </div>
+      )}
       <p style={{ ...typography.small, margin: `0 0 ${spacing.lg}`, color: colors.mutedDarker }}>
         Showing {filteredFactors.length} of {allFactors.length} factors · {liveFactors.length} measured · {pendingFactors.length} pending
       </p>

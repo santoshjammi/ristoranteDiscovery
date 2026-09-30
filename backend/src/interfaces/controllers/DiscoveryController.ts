@@ -11,6 +11,7 @@ import { GenerateReportUseCase } from '../../application/discovery/GenerateRepor
 import { captureSnapshot } from '../../domain/scorecard/ScorecardSnapshotService';
 import { AuditService } from '../../application/audit/AuditService';
 import { getScorecard } from '../../domain/scorecard/ScorecardService';
+import { ScanEngine } from '../../application/discovery/scan/ScanEngine';
 import {
   determineEnrichment,
   isChallengePage,
@@ -26,9 +27,11 @@ export class DiscoveryController {
   private twinRepo: PrismaDigitalTwinRepository;
   private auditService: AuditService;
   private prisma: PrismaClient;
+  private scanEngine: ScanEngine;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.scanEngine = new ScanEngine(this.prisma);
     this.twinRepo = new PrismaDigitalTwinRepository(this.prisma);
     const scorecardRepo = new PrismaScorecardRepository(this.prisma);
     const evidenceRepo = new PrismaEvidenceRepository(this.prisma);
@@ -223,6 +226,52 @@ export class DiscoveryController {
     }
   };
 
+  /**
+   * POST /api/v1/discovery/restaurants/:id/scan
+   * Re-scan ALL available public data for a restaurant by its stored
+   * name/address/city (+ optional googleShareUrl). Reuses the intake scan
+   * engine (discover → observe → record) and returns a grouped, categorized
+   * breakdown of every discovered source (real vs synthetic vs pending) plus
+   * a Data Integrity summary. This is the on-demand "scan all data" surface
+   * on the restaurant detail page.
+   */
+  scan = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
+      if (!restaurant) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Restaurant not found' } });
+        return;
+      }
+
+      // Accept an optional googleShareUrl override/seed; fall back to stored fields.
+      const googleShareUrl = req.body?.googleShareUrl || undefined;
+
+      // Delegate ALL scan-type discovery + classification + idempotent
+      // persistence to the ScanEngine. It runs every scan type (GBP, website,
+      // menu, reviews, listings, social, ordering), dedupes URLs, classifies
+      // each as real/synthetic/noise/unavailable, and returns grouped + byType
+      // results. The controller stays thin; the concrete scan types live in
+      // application/discovery/scan/.
+      const summary = await this.scanEngine.runAll(
+        {
+          name: restaurant.name,
+          address: restaurant.address,
+          city: restaurant.city,
+          website: restaurant.website || undefined,
+          googleShareUrl: googleShareUrl || undefined,
+        },
+        id,
+        restaurant.name,
+      );
+
+      res.json({ data: summary });
+    } catch (error: any) {
+      console.error('Restaurant scan failed:', error);
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: error.message } });
+    }
+  };
+
   private normalizeText(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
@@ -257,8 +306,14 @@ export class DiscoveryController {
         const plain = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         const observedMenuHint = /menu|biryani|dosa|curry|tikka|thali|naan|starters|appetizers|specials/i.test(plain) ? plain.slice(0, 400) : title;
         const sourceType = this.sourceTypeForUrl(url);
+        // Deterministic checksum: `<restaurantId>:<normalized-url>`.
+        // On a RE-SCAN this is IDENTICAL for the same URL, so we UPSERT on it
+        // (idempotent) instead of create() (which throws a unique-constraint
+        // violation and gets misclassified as 'unavailable'). Re-scans refresh
+        // the observation + evidence rather than duplicate them.
         const checksum = `${restaurantId}:${this.normalizeText(url)}`;
         const observationId = `evi-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const evidenceId = `evr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const provenance = {
           discoveredBy: discoveredByUrl.get(url) ?? (seedUrls.includes(url) ? 'seed-url' : 'public-search'),
           query: queryByUrl.get(url) ?? this.buildDiscoveryQuery(input),
@@ -277,9 +332,24 @@ export class DiscoveryController {
             metadata: JSON.stringify({ sourceUrl: url, freshness: 'public-live', provenance }),
           },
         });
-        await this.prisma.evidenceRecord.create({
-          data: {
-            id: `evr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        // Idempotent: refresh the evidence row for this checksum if it already
+        // exists (a re-scan of the same restaurant/source), else create it.
+        await this.prisma.evidenceRecord.upsert({
+          where: { checksum },
+          update: {
+            observationIds: JSON.stringify([observationId]),
+            sourceId: url,
+            sourceType,
+            entityType: 'Restaurant',
+            entityId: restaurantId,
+            payload: JSON.stringify({ rawObservation: html.slice(0, 4000), normalizedValue: { title, observedMenuHint } }),
+            observedAt,
+            ingestedAt: new Date(),
+            confidence: response.ok ? 0.78 : 0.42,
+            status: 'active',
+          },
+          create: {
+            id: evidenceId,
             observationIds: JSON.stringify([observationId]),
             sourceId: url,
             sourceType,
@@ -300,7 +370,11 @@ export class DiscoveryController {
           enrichmentCandidates.push({ sourceUrl: url, sourceType, confidence, title, html });
         }
         out.push({ sourceUrl: url, sourceType, observedAt, confidence, normalizedValue: { title, observedMenuHint }, provenance });
-      } catch {
+      } catch (error: any) {
+        // Log the real reason instead of silently swallowing it. A scan that
+        // "discovers" a URL but marks it unavailable is almost always a DB
+        // unique-collision or a fetch error — hide neither.
+        console.error(`[scan] source ${url} unavailable:`, error?.message ?? error);
         out.push({ sourceUrl: url, sourceType: this.sourceTypeForUrl(url), status: 'unavailable' });
       }
     }

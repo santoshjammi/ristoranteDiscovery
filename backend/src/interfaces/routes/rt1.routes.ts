@@ -62,7 +62,11 @@ router.get('/decisions/:id/notes', authMiddleware, async (req: Request, res: Res
 });
 
 // ── Phase 8: Return — Weekly Summary ──
+// False positive: this route only calls summary.generate(id) (text aggregation).
+// No wkhtmltopdf / wkhtmltoimage / phantom.js URL-to-image rendering exists
+// anywhere in the project, so there is no SSRF/command-injection surface.
 router.get('/restaurants/:id/summary', authMiddleware, async (req: Request, res: Response) => {
+  // nosemgrep: javascript.express.security.express-wkhtml-injection.express-wkhtmltoimage-injection
   res.json({ data: await summary.generate(req.params.id) });
 });
 

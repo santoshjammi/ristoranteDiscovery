@@ -10,12 +10,37 @@
 
 export type FactorStatus = 'excellent' | 'good' | 'fair' | 'needs_attention' | 'critical' | 'pending_observation';
 
+// ── RIST-RDI-007 Signal-layer types (additive import) ──
+import type {
+  DiscoverySignal,
+  FactorCoverage,
+  SignalModelSummary,
+} from '../discovery-intelligence/types';
+
 export interface SubSignal {
   id: string;
   name: string;
   score: number | null;
   status: FactorStatus;
   evidence: string[];
+  /** Evidence source feeding this sub-signal's score (RIST-RDI-007). */
+  sourceType?: 'connector' | 'live_column' | 'presence' | 'none';
+}
+
+/** Why a factor's confidence is what it is — surfaced to partners. */
+export interface ConfidenceRationale {
+  /** Primary evidence source feeding the score. */
+  sourceType: 'connector' | 'live_column' | 'presence' | 'composite' | 'none';
+  /** True when the score came from real connector data. */
+  hasConnectorEvidence: boolean;
+  /** Sub-factors that are live (have a non-null score). */
+  liveSubSignals: number;
+  /** Total sub-factors defined for the factor. */
+  totalSubSignals: number;
+  /** Real evidence rows underlying the factor. */
+  evidenceCount: number;
+  /** Human-readable explanation for partners. */
+  explanation: string;
 }
 
 export interface FactorScore {
@@ -25,14 +50,36 @@ export interface FactorScore {
   score: number | null;          // null = pending observation
   status: FactorStatus;
   trend: 'up' | 'down' | 'stable' | null;
-  confidence: number | null;      // null = pending
+  confidence: number | null;      // null = pending; now EVIDENCE-DERIVED, not hardcoded
   lastUpdated: string | null;     // ISO date or null
   businessImpact: string;
   evidenceCount: number;
-  subSignals: SubSignal[];        // v2.0: merged factors preserved as evidence
+  /** Per-factor evidence-derived confidence rationale (RIST-RDI-007). */
+  confidenceRationale: ConfidenceRationale | null;
+  subSignals: SubSignal[];        // v2.0: merged sub-factors preserved as evidence
   connectorRequired?: string;     // e.g. "Google Business Profile API"
   recommendedActions: string[];
   expectedImprovement: string;
+
+  // ── RIST-RDI-007 Signal-layer (additive, optional — wiring brief §2) ──
+  /** Discovery-signal model signals for this factor (parallel additive layer). */
+  signals: DiscoverySignal[];
+  /** Measured signal coverage: { measured, total }. */
+  coverage?: { measured: number; total: number };
+  /** Detailed per-status signal accounting. */
+  coverageDetail?: FactorCoverage;
+  /** Count of measured+partial signals for this factor. */
+  measuredSignalCount?: number;
+  /** Total signals defined for this factor. */
+  totalSignalCount?: number;
+  /** Count of pending_observation signals. */
+  pendingSignalCount?: number;
+  /** Count of not_applicable signals (capability-gated). */
+  notApplicableCount?: number;
+  /** Count of stale signals. */
+  staleCount?: number;
+  /** Most recent contributing-signal observation (ISO date or null). */
+  lastObservedAt?: string | null;
 }
 
 export interface CategoryScore {
@@ -59,6 +106,8 @@ export interface Scorecard {
   liveFactors: number;
   pendingFactors: number;
   lastUpdated: string;
+  /** RIST-RDI-007 additive signal-model summary (parallel layer, optional). */
+  signalModel?: SignalModelSummary;
 }
 
 // ── Factor Definitions (v2.0 — 25 factors) ──

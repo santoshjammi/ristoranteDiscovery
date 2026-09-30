@@ -9,7 +9,7 @@ async function signUp(page: any, email: string) {
   await page.getByPlaceholder('Your Name').fill('Test User');
   await page.getByPlaceholder('Email').fill(email);
   await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
-  await page.getByPlaceholder('Organization Name').fill('Test Org');
+  await page.getByPlaceholder('Organization Name').fill('RDI Org - restaurant-detail');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });
@@ -108,7 +108,9 @@ test.describe('Restaurant Detail / Scorecard — Comprehensive', () => {
     await addRestaurant(page, 'Factor Detail Test');
     await clickRestaurant(page, 'Factor Detail Test');
     await page.waitForURL(/\/dashboard\/restaurants\//, { timeout: 5000 });
-    await page.getByText('Google Business Profile').first().click();
+    // The factor card is the clickable element carrying the name + a % confidence
+    // caption (prose in provenance panels also mentions "Google Business Profile").
+    await page.locator('div[style*="cursor: pointer"]').filter({ hasText: 'Google Business Profile' }).filter({ hasText: '% confidence' }).first().click();
     await expect(page.getByText('Current Score')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Business Impact')).toBeVisible();
     await expect(page.getByText('Expected Improvement')).toBeVisible();
@@ -122,7 +124,7 @@ test.describe('Restaurant Detail / Scorecard — Comprehensive', () => {
     await addRestaurant(page, 'Rec Actions Test');
     await clickRestaurant(page, 'Rec Actions Test');
     await page.waitForURL(/\/dashboard\/restaurants\//, { timeout: 5000 });
-    await page.getByText('Google Business Profile').first().click();
+    await page.locator('div[style*="cursor: pointer"]').filter({ hasText: 'Google Business Profile' }).filter({ hasText: '% confidence' }).first().click();
     const actions = page.locator('ul li');
     const count = await actions.count();
     expect(count).toBeGreaterThan(0);
@@ -261,7 +263,7 @@ test.describe('Restaurant Detail / Scorecard — Comprehensive', () => {
     await addRestaurant(page, 'Close Test');
     await clickRestaurant(page, 'Close Test');
     await page.waitForURL(/\/dashboard\/restaurants\//, { timeout: 5000 });
-    await page.getByText('Google Business Profile').first().click();
+    await page.locator('div[style*="cursor: pointer"]').filter({ hasText: 'Google Business Profile' }).filter({ hasText: '% confidence' }).first().click();
     await expect(page.getByText('Current Score')).toBeVisible({ timeout: 5000 });
     await page.getByRole('button', { name: '✕' }).first().click();
     await expect(page.getByText('Current Score')).not.toBeVisible();

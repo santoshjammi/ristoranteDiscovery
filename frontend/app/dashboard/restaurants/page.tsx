@@ -10,7 +10,7 @@ import { PortfolioCard, PortfolioSummaryBar, type Portfolio, type PortfolioResta
 import { PortfolioHeatMap, type HeatFilter } from "@/components/scorecard/PortfolioHeatMap";
 import { PrioritizationView, type PrioritizedPortfolio, type SortKey } from "@/components/scorecard/PrioritizationView";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 function RestaurantList() {
   const { token, organization } = useAuth();

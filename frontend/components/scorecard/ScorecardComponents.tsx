@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
+import { SignalRow, confidencePercent, type SignalRowItem } from "./SignalRow";
+import { EvidenceDrawer, type EvidenceDrawerData } from "./EvidenceDrawer";
 
 export type FactorStatus = 'excellent' | 'good' | 'fair' | 'needs_attention' | 'critical' | 'pending_observation';
 
@@ -12,6 +15,56 @@ export interface SubSignal {
   evidence: string[];
 }
 
+// ── RIST-RDI-007 Discovery Signal layer (additive; all optional) ──
+
+export type SignalStatus = 'measured' | 'partial' | 'pending_observation' | 'not_applicable' | 'stale';
+
+/** A normalized discovery signal (spec §3). confidence is 0..1. */
+export interface DiscoverySignal {
+  id?: string;
+  restaurantId?: string;
+  factorId?: string;
+  signalKey: string;
+  label: string;
+  description?: string;
+  status: SignalStatus;
+  rawValue?: unknown;
+  normalizedValue?: number;
+  normalizedScale?: { min: number; max: number };
+  scoreContribution?: number;
+  weight?: number;
+  /** 0..1 signal confidence. */
+  confidence?: number;
+  observedAt?: string;
+  evidenceRefs?: string[];
+  methodologyVersion?: string;
+}
+
+/** Per-status signal accounting (spec §10). */
+export interface FactorCoverageDetail {
+  totalSignals: number;
+  measured: number;
+  partial: number;
+  pending: number;
+  notApplicable: number;
+  stale: number;
+}
+
+/** Restaurant-level signal model summary (brief §1). */
+export interface SignalModelSummary {
+  restaurantId?: string;
+  methodologyVersion?: string;
+  supportedSignals?: number;
+  observedSignals?: number;
+  pendingSignals?: number;
+  notApplicableSignals?: number;
+  staleSignals?: number;
+  factors?: number;
+  realSourcesOnly?: boolean;
+  syntheticInputs?: number;
+  manualOverrides?: number;
+}
+
 export interface FactorScore {
   id: string; name: string; description: string;
   score: number | null; status: FactorStatus;
@@ -21,6 +74,17 @@ export interface FactorScore {
   subSignals: SubSignal[];
   connectorRequired?: string;
   recommendedActions: string[]; expectedImprovement: string;
+
+  // ── RIST-RDI-007 additive signal layer (optional; degrade gracefully) ──
+  signals?: DiscoverySignal[];
+  coverage?: { measured: number; total: number };
+  coverageDetail?: FactorCoverageDetail;
+  measuredSignalCount?: number;
+  totalSignalCount?: number;
+  pendingSignalCount?: number;
+  notApplicableCount?: number;
+  staleCount?: number;
+  lastObservedAt?: string | null;
 }
 
 export interface CategoryScore {
@@ -36,6 +100,8 @@ export interface ScorecardData {
   categories: CategoryScore[];
   totalFactors: number; liveFactors: number; pendingFactors: number;
   lastUpdated: string;
+  /** RIST-RDI-007 additive restaurant-level signal-model summary. */
+  signalModel?: SignalModelSummary;
 }
 
 function statusColor(status: FactorStatus): string {
@@ -146,7 +212,22 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
   factor: FactorScore; expanded: boolean; onToggle: (id: string) => void;
 }) {
   const isPending = factor.status === 'pending_observation';
-  const freshness = factor.lastUpdated ? formatFreshness(factor.lastUpdated) : null;
+  const [evidence, setEvidence] = useState<EvidenceDrawerData | null>(null);
+
+  const signals = factor.signals ?? [];
+
+  const openEvidence = (sig: DiscoverySignal) => {
+    setEvidence({
+      label: sig.label,
+      description: sig.description,
+      sourceName: sig.evidenceRefs?.[0],
+      observedAt: sig.observedAt,
+      confidence: sig.confidence,
+      methodologyVersion: sig.methodologyVersion,
+      evidenceRefs: sig.evidenceRefs,
+    });
+  };
+
   return (
     <div
       style={{
@@ -155,7 +236,7 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
         cursor: 'pointer', transition: 'border-color 0.15s',
         opacity: isPending ? 0.75 : 1,
       }}
-      onClick={() => onToggle(factor.id)}
+      onClick={() => { onToggle(factor.id); setEvidence(null); }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.xs }}>
         <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: colors.text, flex: 1 }}>{factor.name}</p>
@@ -173,7 +254,8 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
           {factor.trend && <span style={{ ...typography.caption, color: factor.trend === 'up' ? colors.success : factor.trend === 'down' ? colors.danger : colors.muted }}>{factor.trend === 'up' ? '↑' : factor.trend === 'down' ? '↓' : '→'}</span>}
           {factor.confidence !== null && <span style={{ ...typography.caption, color: colors.muted }}>{factor.confidence}% confidence</span>}
           {factor.evidenceCount > 0 && <span style={{ ...typography.caption, color: colors.muted }}>{factor.evidenceCount} sources</span>}
-          {freshness && <span style={{ ...typography.caption, color: colors.muted }}>· {freshness}</span>}
+          {signals.length > 0 && <span style={{ ...typography.caption, color: colors.muted }}>{signals.length} signals</span>}
+          {factor.lastUpdated && <span style={{ ...typography.caption, color: colors.muted }}>· {formatFreshness(factor.lastUpdated)}</span>}
         </div>
       )}
       {isPending && factor.connectorRequired && (
@@ -200,7 +282,38 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
               <p style={{ margin: `${spacing.xs} 0 0`, fontSize: '0.75rem', color: colors.text }}>{factor.expectedImprovement}</p>
             </div>
           </div>
-          {factor.subSignals.length > 0 ? (
+
+          {/* Signal drill-down (spec §21) — each signal is a reusable SignalRow */}
+          {signals.length > 0 ? (
+            <div style={{ marginBottom: spacing.md }}>
+              <p style={{ ...typography.caption, margin: `0 0 ${spacing.sm}`, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Signals</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                {signals.map((s) => (
+                  <SignalRow
+                    key={s.signalKey || s.id}
+                    signal={{
+                      id: s.id,
+                      label: s.label,
+                      description: s.description,
+                      status: s.status,
+                      rawValue: s.rawValue,
+                      normalizedValue: s.normalizedValue,
+                      confidence: s.confidence,
+                      evidenceRefs: s.evidenceRefs,
+                    } as SignalRowItem}
+                    onEvidenceClick={() => openEvidence(s)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            (factor.subSignals.length > 0 ? null : (
+              <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, fontStyle: 'italic' }}>No sub-signals for this factor.</p>
+            ))
+          )}
+
+          {/* Legacy v1.0 sub-signals kept as evidence (only rendered when no signal layer) */}
+          {signals.length === 0 && factor.subSignals.length > 0 && (
             <>
               <p style={{ ...typography.caption, margin: `0 0 ${spacing.sm}`, color: colors.mutedDarker, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Sub-Signals</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
@@ -224,9 +337,8 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
                 ))}
               </div>
             </>
-          ) : (
-            <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, fontStyle: 'italic' }}>No sub-signals for this factor.</p>
           )}
+
           {/* Recommended actions */}
           {factor.recommendedActions.length > 0 && (
             <div style={{ marginTop: spacing.md }}>
@@ -238,6 +350,9 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
           )}
         </div>
       )}
+
+      {/* Evidence drawer (spec §23) — dismissible, full-width on mobile */}
+      <EvidenceDrawer data={evidence} onClose={() => setEvidence(null)} />
     </div>
   );
 }
@@ -246,11 +361,25 @@ export function ExpandableFactorCard({ factor, expanded, onToggle }: {
 export function ProblemFactors({ factors, onSelect }: {
   factors: FactorScore[]; onSelect: (id: string) => void;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const problems = factors
     .filter((f) => f.status === 'needs_attention' || f.status === 'critical')
     .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
     .slice(0, 5);
   if (problems.length === 0) return null;
+
+  const weakAndStrong = (f: FactorScore) => {
+    const sigs = f.signals ?? [];
+    const measured = sigs.filter((s) => s.status === 'measured' || s.status === 'partial');
+    if (measured.length === 0) return null;
+    const withScore = measured
+      .map((s) => ({ s, score: s.normalizedValue ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+    const weak = withScore.filter((x) => x.score < 70);
+    const strong = withScore.filter((x) => x.score >= 70);
+    return { weak, strong, all: withScore };
+  };
+
   return (
     <div style={{ padding: spacing.xl, background: colors.surface, borderRadius: radius.xl, border: `1px solid ${colors.dangerLight}` }}>
       <h3 style={{ ...typography.h3, margin: `0 0 ${spacing.md}`, color: colors.danger }}>⚠️ Priority Opportunities</h3>
@@ -258,19 +387,72 @@ export function ProblemFactors({ factors, onSelect }: {
         These factors are holding back your score the most. Fixing them delivers the fastest improvement.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-        {problems.map((f) => (
-          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, background: colors.bg, borderRadius: radius.md, cursor: 'pointer' }}
-            onClick={() => onSelect(f.id)}>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: colors.text }}>{f.name}</p>
-              <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>{f.expectedImprovement}</p>
+        {problems.map((f) => {
+          const detail = weakAndStrong(f);
+          const open = expandedId === f.id;
+          return (
+            <div key={f.id} style={{ background: colors.bg, borderRadius: radius.md }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, cursor: 'pointer' }}
+                onClick={() => {
+                  setExpandedId(open ? null : f.id);
+                  onSelect(f.id);
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: colors.text }}>{f.name}</p>
+                  <p style={{ ...typography.caption, margin: `${spacing.xs} 0 0`, color: colors.mutedDarker }}>{f.expectedImprovement}</p>
+                </div>
+                <div style={{ textAlign: 'right', marginLeft: spacing.md }}>
+                  <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: statusColor(f.status) }}>{f.score}</p>
+                  <span style={{ ...typography.caption, color: f.status === 'critical' ? colors.danger : colors.warning }}>{f.status === 'critical' ? 'Critical' : 'Needs Attention'}</span>
+                </div>
+              </div>
+              {/* Expanded reason: weak AND strong measured signals (spec §34) */}
+              {open && detail && (
+                <div style={{ padding: `0 ${spacing.md} ${spacing.md}` }}>
+                  <div style={{ padding: spacing.md, background: colors.surface, borderRadius: radius.md, border: `1px solid ${colors.border}` }}>
+                    <p style={{ ...typography.label, margin: `0 0 ${spacing.sm}`, color: colors.danger }}>Why it is low</p>
+                    {detail.weak.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                        {detail.weak.map(({ s, score }) => (
+                          <SignalRow key={s.signalKey || s.id} signal={{
+                            label: s.label, description: s.description, status: s.status,
+                            rawValue: s.rawValue, normalizedValue: s.normalizedValue,
+                            confidence: s.confidence, evidenceRefs: s.evidenceRefs,
+                          } as SignalRowItem} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, fontStyle: 'italic' }}>
+                        No weak measured signals — all measured signals are performing well.
+                      </p>
+                    )}
+                    {detail.strong.length > 0 && (
+                      <>
+                        <p style={{ ...typography.label, margin: `${spacing.lg} 0 ${spacing.sm}`, color: colors.success }}>Strong signals</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                          {detail.strong.map(({ s }) => (
+                            <SignalRow key={s.signalKey || s.id} signal={{
+                              label: s.label, description: s.description, status: s.status,
+                              rawValue: s.rawValue, normalizedValue: s.normalizedValue,
+                              confidence: s.confidence, evidenceRefs: s.evidenceRefs,
+                            } as SignalRowItem} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {detail.weak.length + detail.strong.length === 0 && (
+                      <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, fontStyle: 'italic' }}>
+                        No measured signal detail available for this factor.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div style={{ textAlign: 'right', marginLeft: spacing.md }}>
-              <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: statusColor(f.status) }}>{f.score}</p>
-              <span style={{ ...typography.caption, color: f.status === 'critical' ? colors.danger : colors.warning }}>{f.status === 'critical' ? 'Critical' : 'Needs Attention'}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -323,6 +505,11 @@ function formatFreshness(iso: string): string {
 
 export function FactorCard({ factor, onSelect }: { factor: FactorScore; onSelect?: (id: string) => void }) {
   const isPending = factor.status === 'pending_observation';
+  const lowConfidence = !isPending && factor.confidence !== null && factor.confidence < 60;
+  const coverage = factor.coverageDetail
+    ? { measured: factor.coverageDetail.measured + factor.coverageDetail.partial, total: factor.coverageDetail.totalSignals }
+    : factor.coverage;
+  const updatedText = factor.lastUpdated ? formatFreshness(factor.lastUpdated) : null;
   return (
     <div
       onClick={() => onSelect?.(factor.id)}
@@ -351,11 +538,27 @@ export function FactorCard({ factor, onSelect }: { factor: FactorScore; onSelect
         <p style={{ ...typography.caption, margin: 0, color: colors.mutedDarker, fontStyle: 'italic' }}>Requires: {factor.connectorRequired}</p>
       )}
       {!isPending && (
-        <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap' }}>
-          {factor.trend && <span style={{ ...typography.caption, color: factor.trend === 'up' ? colors.success : factor.trend === 'down' ? colors.danger : colors.muted }}>{factor.trend === 'up' ? '↑' : factor.trend === 'down' ? '↓' : '→'}</span>}
-          {factor.confidence !== null && <span style={{ ...typography.caption, color: colors.muted }}>{factor.confidence}% confidence</span>}
-          {factor.evidenceCount > 0 && <span style={{ ...typography.caption, color: colors.muted }}>{factor.evidenceCount} sources</span>}
-        </div>
+        <>
+          {/* Confidence / coverage / evidence / freshness — spec §20 */}
+          <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.xs }}>
+            {coverage && typeof coverage.measured === 'number' && typeof coverage.total === 'number' && coverage.total > 0 && (
+              <span style={{ ...typography.caption, color: colors.muted }}>
+                Coverage {coverage.measured} / {coverage.total}
+              </span>
+            )}
+            {factor.confidence !== null && (
+              <span style={{ ...typography.caption, color: colors.muted }}>{factor.confidence}% confidence</span>
+            )}
+            {factor.evidenceCount > 0 && <span style={{ ...typography.caption, color: colors.muted }}>{factor.evidenceCount} sources</span>}
+            {updatedText && <span style={{ ...typography.caption, color: colors.muted }}>Updated {updatedText}</span>}
+          </div>
+          {/* Low-confidence: color + text badge (NOT color alone — spec §27) */}
+          {lowConfidence && (
+            <span style={{ display: 'inline-block', marginTop: spacing.xs, padding: `${spacing.xs} ${spacing.sm}`, borderRadius: radius.sm, fontSize: '0.625rem', fontWeight: 600, background: colors.warningLight, color: colors.warning, border: `1px solid ${colors.warning}33` }}>
+              ⚠ Low Confidence
+            </span>
+          )}
+        </>
       )}
     </div>
   );

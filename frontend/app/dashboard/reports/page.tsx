@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from "@/app/lib/auth-context";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 interface RestaurantSummary {
   id: string;

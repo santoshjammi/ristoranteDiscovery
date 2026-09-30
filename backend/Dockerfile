@@ -41,9 +41,16 @@ RUN mkdir -p /app/data /app/bootstrap
 # Bundle the isolated production showcase DB (6 real restaurants) for bootstrap
 COPY prisma/rtp-showcase.db /app/bootstrap/rtp-showcase.db
 
+# Run as a non-root user (container hardening). Create a dedicated app user,
+# grant ownership of /app so the SQLite DB and entrypoint remain writable.
+RUN useradd --create-home --uid 1001 --shell /usr/sbin/nologin appuser \
+  && chown -R appuser:appuser /app
+
 # Setup entrypoint script
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
+
+USER appuser
 
 EXPOSE 5001
 

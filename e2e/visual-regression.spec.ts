@@ -11,7 +11,7 @@ async function signUp(page: any, email: string) {
   await page.getByPlaceholder('Your Name').fill('Test User');
   await page.getByPlaceholder('Email').fill(email);
   await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
-  await page.getByPlaceholder('Organization Name').fill('Test Org');
+  await page.getByPlaceholder('Organization Name').fill('RDI Org - visual-regression');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });
@@ -27,7 +27,7 @@ async function signInAsAdmin(page: any) {
   await page.getByPlaceholder('Your Name').fill('Admin Test');
   await page.getByPlaceholder('Email').fill(email);
   await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
-  await page.getByPlaceholder('Organization Name').fill('Test Org');
+  await page.getByPlaceholder('Organization Name').fill('RDI Org - visual-regression');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   await page.waitForFunction(() => !!localStorage.getItem('rdi_token') && !!localStorage.getItem('rdi_org'), { timeout: 10000 });

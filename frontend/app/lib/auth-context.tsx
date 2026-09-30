@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { API } from "@/app/lib/api-config";
 
 interface User {
   id: string;
@@ -30,7 +31,6 @@ interface AuthContextType {
   switchOrganization: (org: Organization) => void;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
 const AuthContext = createContext<AuthContextType>(null!);
 
 function getStoredToken(): string | null {

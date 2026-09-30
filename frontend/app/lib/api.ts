@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API_URL } from "@/app/lib/api-config";
 
 export interface Restaurant {
   id: string;

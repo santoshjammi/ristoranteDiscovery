@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 function InviteForm({ inviteEmail, setInviteEmail, inviteRole, setInviteRole, inviting, inviteError, onSubmit }: {
   inviteEmail: string; setInviteEmail: (v: string) => void;

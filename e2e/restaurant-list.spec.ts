@@ -9,7 +9,7 @@ async function signUp(page: any, email: string) {
   await page.getByPlaceholder('Your Name').fill('Test User');
   await page.getByPlaceholder('Email').fill(email);
   await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
-  await page.getByPlaceholder('Organization Name').fill('Test Org');
+  await page.getByPlaceholder('Organization Name').fill('RDI Org - restaurant-list');
   await page.getByRole('button', { name: 'Create Account' }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   // Wait for auth context to finish fetching org

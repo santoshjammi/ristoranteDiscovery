@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const PWD = 'TestPass123!';
-const signUp = async (page: any, e: string) => { await page.goto('/auth'); await page.getByText('Sign Up').last().click(); await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 }); await page.getByPlaceholder('Your Name').fill('TU'); await page.getByPlaceholder('Email').fill(e); await page.getByPlaceholder('Password').fill(PWD); await page.getByPlaceholder('Organization Name').fill('TO'); await page.getByRole('button', { name: 'Create Account' }).click(); await page.waitForURL(/\/dashboard/, { timeout: 10000 }); };
+const signUp = async (page: any, e: string) => { await page.goto('/auth'); await page.getByText('Sign Up').last().click(); await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 }); await page.getByPlaceholder('Your Name').fill('TU'); await page.getByPlaceholder('Email').fill(e); await page.getByPlaceholder('Password').fill(PWD); await page.getByPlaceholder('Organization Name').fill('RDI Org - auth-public'); await page.getByRole('button', { name: 'Create Account' }).click(); await page.waitForURL(/\/dashboard/, { timeout: 10000 }); };
 
 test.describe('Landing Page', () => {
   test('Hero heading and navigation visible', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('Auth Page', () => {
     await page.getByPlaceholder('Your Name').fill('TU');
     await page.getByPlaceholder('Email').fill(e);
     await page.getByPlaceholder('Password').fill(PWD);
-    await page.getByPlaceholder('Organization Name').fill('TO');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - auth-public');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await expect(page.getByRole('button', { name: 'Create Account' })).not.toBeVisible({ timeout: 5000 });
   });
@@ -107,7 +107,7 @@ test.describe('Auth Page', () => {
     await page.getByPlaceholder('Your Name').fill('TU');
     await page.getByPlaceholder('Email').fill(e);
     await page.getByPlaceholder('Password').fill(PWD);
-    await page.getByPlaceholder('Organization Name').fill('TO');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - auth-public');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await expect(page.getByText('Email already registered').first()).toBeVisible({ timeout: 10000 });
   });

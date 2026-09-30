@@ -9,7 +9,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
@@ -32,7 +32,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
@@ -79,7 +79,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
@@ -109,7 +109,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
@@ -126,7 +126,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
@@ -142,7 +142,7 @@ test.describe('Intelligence Pages', () => {
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
     await page.getByPlaceholder('Password').fill('TestPass123!');
-    await page.getByPlaceholder('Organization Name').fill('Test Org');
+    await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { colors, spacing, radius, typography, severityColor, severityLabel } from "@/lib/design-tokens";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8040";
+import { API } from "@/app/lib/api-config";
 
 interface Decision {
   id: string;

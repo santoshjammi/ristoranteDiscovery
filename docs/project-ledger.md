@@ -20,7 +20,7 @@
 | API: `GET /api/restaurants/:id/scorecard` | ✅ Live | Returns full scorecard with categories, factors, status |
 | API: `DELETE /api/restaurants/:id` | ✅ Live | Hard delete |
 | API: `PATCH /api/restaurants/:id/disable` | ✅ Live | Toggle disabled status |
-| Admin seed (`admin@ristorante.app` / `admin123`) | ✅ Live | Auto-seeded on server start |
+| Admin seed (`admin@ristorante.app`) | ✅ Live | Provisioned from `ADMIN_PASSWORD` env; NOT auto-seeded in production without it |
 | Score consistency (outside = inside) | ✅ Fixed | Both use same 8-score composite average |
 | Restaurant list: composite score, disabled badge | ✅ Built | Shows overallScore, "Disabled" tag, ✕ delete button |
 | Team API: members, invitations, remove | ✅ Built | `GET /:id/members`, `POST /:id/invitations`, `DELETE /:id/members/:memberId` |
@@ -79,6 +79,10 @@
 | P2 | Next.js 15.5.22 (outdated) | Not upgraded | ✅ Fixed — package.json updated to `^16.0.0`, run `pnpm install` locally |
 | P3 | `Failed to fetch` in auth-context.tsx:53 | Backend down when frontend loads | ✅ Fixed — health check gate + retry loop with exponential backoff + `connectionError`/`retryCount` state |
 | P2 | AI Service only uses local Ollama | No cloud fallback | ✅ Fixed — now cascades NVIDIA NIM → Ollama Cloud → local Ollama |
+| P1 | **Double `/api` prefix → login 404** | Codebase inconsistent on whether `NEXT_PUBLIC_API_URL` ends in `/api`; callers appended `/api` again → `.../api/api/auth/signin` | ✅ Fixed — new `frontend/app/lib/api-config.ts` normalizes base to origin (strips trailing `/api`). **Class-wide:** ALL 34 API-call files (auth-context, api, discovery + 31 pages/components) now import `{ API }`/`{ API_URL }` from it. Zero inline `const API` remain. Single `/api` guaranteed regardless of env. |
+| 🔴 **P0 — Showcase DB contamination & source loss** | `backend/prisma/dev.db` lost its 6 REAL_VERIFIED restaurants (replaced by 2173 test fixtures + "Sairam Parlor"); a live run wrote 7 restaurants + 300 benchmark rows into `rtp-showcase.db` | ✅ **Recovered** — pristine copy (6 real, 0 benchmarks) restored from Docker volume `rdi-data`. Gate green 6/6. **⚠️ LATENT:** `dev.db` no longer holds the 6 real restaurants, so `build-showcase-db.mjs` now rebuilds an EMPTY showcase. The 6 real restaurants exist ONLY in the Docker `rdi-data` volume now — a recovery source must be preserved (see RIST-RDI-006 note). |
+| **RIST-RDI-006 "Scan All Data"** | On-demand re-scan by stored name/address/city (+ optional GBP URL), grouped results by category, Data Integrity summary | ✅ **Built** — `POST /api/discovery/restaurants/:id/scan` in `DiscoveryController.ts` + `DataScanPanel.tsx` on restaurant detail page. Verifies: backend 86/86 tests, frontend typecheck+build, live scan returns grouped real data. |
+| ✔ **RIST-RDI-006 scan fixed** — re-scan returned ALL sources as `unavailable` | `absorbPublicEvidence` used `evidenceRecord.create` on a deterministic `checksum` with a `@unique` constraint; re-scanning the same restaurant collided on the unique key, the bare `catch {}` swallowed the DB error and mislabeled every source `unavailable` | ✅ Fixed — `evidenceRecord.upsert({ where: { checksum } })` makes scans idempotent (refreshes existing evidence, no duplicate/no throw); `catch(error)` now logs the real reason. Verified: scan returns 8 REAL sources grouped by category (website×2, menu×3, listings×3); 2nd scan stays idempotent (evidence count unchanged); 86/86 tests + integrity gate green. |
 
 ---
 
@@ -96,9 +100,10 @@
 ## 🎯 Next Actions (Immediate)
 
 1. **Real-data path (primary):** Add Restaurant → discover real public evidence → generate the 25-factor discovery scorecard → deploy the RTP showcase. (RIST-AI-001 AI architecture is frozen and closed.)
-2. **Visual regression tests** — Playwright screenshot-based
-3. **Audit report** — Full PDF generation
-4. **Notification system** — email/Slack/Discord alerts
+2. **Multi-tenant direction FROZEN (RIST-MT-001)** — design agreed in `docs/designs/rist-mt-001-multitenancy.md`. No implementation yet; awaiting Santosh's go-ahead before any build.
+3. **Visual regression tests** — Playwright screenshot-based
+4. **Audit report** — Full PDF generation
+5. **Notification system** — email/Slack/Discord alerts
 
 ---
 
@@ -152,5 +157,5 @@ Everything else → backlog.
 | Target | 2,500+ |
 | Backend Status | ✅ Healthy (port 8040) |
 | Frontend Status | ✅ Healthy (port 3000) |
-| Admin Login | `admin@ristorante.app` / `admin123` |
+| Admin Login | `admin@ristorante.app` — password from `ADMIN_PASSWORD` env (not a hardcoded default) |
 | Real Restaurants | 21 |
