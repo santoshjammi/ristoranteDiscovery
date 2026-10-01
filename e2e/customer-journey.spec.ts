@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { BACKEND_URL } from './helpers/env';
+import { BACKEND_URL, TEST_PASSWORD } from './helpers/env';
 
 // Pre-flight: verify both servers are healthy before running any tests
 test.beforeAll(async ({ request }) => {
@@ -10,7 +10,6 @@ test.beforeAll(async ({ request }) => {
   expect(body.status, `Backend health: ${body.status}`).toBe('healthy');
 });
 
-const TEST_PASSWORD = 'TestPass123!';
 const TEST_NAME = 'Test Restaurant Owner';
 const ORG_NAME = 'Test Restaurant Group';
 const RESTAURANT_NAME = 'Test Indian Restaurant';

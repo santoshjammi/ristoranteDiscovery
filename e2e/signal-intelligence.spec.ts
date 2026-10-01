@@ -13,8 +13,7 @@ import { test, expect, type Page, type APIRequestContext } from '@playwright/tes
 // critical/needs_attention factor), we exercise it on a freshly-created sparse
 // restaurant that is guaranteed to produce problem factors.
 
-const TEST_PASSWORD = 'TestPass123!';
-import { BACKEND_URL as BACKEND } from './helpers/env';
+import { BACKEND_URL as BACKEND, TEST_PASSWORD } from './helpers/env';
 const SEED_RESTAURANT_ID = 'demo-biryani-maxx';
 
 /** Sign up a unique user via the API and seed the browser's auth token. */
