@@ -174,12 +174,26 @@ scan_sast() {
 scan_docker() {
   log "Container scan (trivy)"
   if ! have trivy; then skip "trivy not installed — container scan skipped"; return; fi
-  local img
-  img=$(grep -iE "^\s*FROM\s+" Dockerfile 2>/dev/null | head -1 | awk '{print $2}')
-  if [[ -z "$img" ]]; then skip "no base image found in Dockerfile"; return; fi
-  local out rc
-  out=$(trivy image --severity CRITICAL,HIGH --no-progress "$img" 2>&1); rc=$?
-  if [[ $rc -eq 0 ]]; then pass "trivy clean for $img"; else fail "trivy found issues in $img — BLOCKING"; echo "$out" | tail -20; fi
+  # Dockerfiles are NOT always at the repo root — this repo keeps them in
+  # backend/ and frontend/. The previous `grep ... Dockerfile` (no path) assumed
+  # ./Dockerfile and silently skipped the scan entirely for any multi-app repo,
+  # so the container half of the gate never actually ran.
+  local files imgs
+  files=$(find . -maxdepth 3 -name 'Dockerfile*' -not -path '*/node_modules/*' 2>/dev/null)
+  if [[ -z "$files" ]]; then skip "no Dockerfile found in the tree"; return; fi
+  imgs=$(grep -hiE '^[[:space:]]*FROM[[:space:]]+' $files 2>/dev/null | awk '{print $2}' | grep -v '^$' | sort -u)
+  if [[ -z "$imgs" ]]; then skip "no base image found in Dockerfiles"; return; fi
+  local img out rc overall=0
+  while read -r img; do
+    [[ -z "$img" ]] && continue
+    out=$(trivy image --severity CRITICAL,HIGH --no-progress "$img" 2>&1); rc=$?
+    if [[ $rc -eq 0 ]]; then
+      pass "trivy clean for $img"
+    else
+      fail "trivy found issues in $img — BLOCKING"; echo "$out" | tail -20; overall=1
+    fi
+  done <<< "$imgs"
+  return $overall
 }
 
 # ---- optional dep install ---------------------------------------------------

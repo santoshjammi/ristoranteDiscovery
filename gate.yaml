@@ -47,11 +47,12 @@ gates:
     timeout_s: 1200
     description: Playwright E2E (stale-container risk until SAI-1692)
 
-  # Advisory: scanner set incomplete (trivy missing). Tracked as SAI-1699.
+  # SAI-1699: trivy installed and the scanner's Dockerfile lookup fixed (it looked
+  # for ./Dockerfile, but this repo keeps them in backend/ and frontend/, so the
+  # container scan silently skipped). Gate now runs clean: 5 PASS, 0 SKIP.
   - id: security
     cmd: ./scripts/prebuild-scan.sh --repo .
     kind: check
-    required: false
-    blocked_by: SAI-1699
+    required: true
     timeout_s: 600
-    description: Pre-build security gate (advisory until SAI-1699)
+    description: Pre-build security gate (secrets, deps, container, SAST)
