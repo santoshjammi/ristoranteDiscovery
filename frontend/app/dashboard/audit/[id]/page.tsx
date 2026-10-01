@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/app/lib/auth-context";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { runAudit, type AuditReport } from "@/app/lib/api";
+import Link from 'next/link';
 
 function severityColor(s: string): string {
   const map: Record<string, string> = { critical: "#ef4444", high: "#f59e0b", medium: "#3b82f6", low: "#6b7280" };
@@ -182,13 +183,13 @@ function AuditReportView() {
         <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--color-muted, #94a3b8)" }}>
           Subscribe to get continuous monitoring, prioritized recommendations, and measurable improvement tracking.
         </p>
-        <a href="/dashboard/settings" style={{
+        <Link href="/dashboard/settings" style={{
           padding: "0.75rem 2rem", borderRadius: "0.5rem", border: "none",
           background: "var(--color-primary, #3b82f6)", color: "#fff", fontWeight: 600,
           fontSize: "1rem", cursor: "pointer", textDecoration: "none", display: "inline-block",
         }}>
           View Subscription Plans
-        </a>
+        </Link>
       </div>
     </div>
   );

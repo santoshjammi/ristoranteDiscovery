@@ -47,4 +47,33 @@ export default [
       ...nextPlugin.configs['core-web-vitals'].rules,
     },
   },
+  {
+    // Guard the whole "raw <a> for internal navigation" class.
+    //
+    // `@next/next/no-html-link-for-pages` only recognises a literal `href="/"`
+    // (verified: a probe containing href="/", "/dashboard/settings", "/auth",
+    // "/pricing" and "/admin" produced exactly ONE error). So internal links to
+    // any other route — the majority — went unflagged, leaving raw <a> where
+    // <Link> is wanted.
+    //
+    // no-html-link-for-pages stays enabled because it understands the app router
+    // and covers the root case. `no-restricted-syntax` adds the general case using
+    // an AST selector (built-in, no extra plugin): an <a> whose href starts with
+    // "/" is internal navigation. External URLs and "#" anchors are legitimate <a>
+    // uses, so they are excluded by the ^/ requirement.
+    files: ['**/*.{jsx,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "JSXOpeningElement[name.name='a'] > JSXAttribute[name.name='href'][value.value=/^\\//]",
+          message:
+            'Internal navigation must use <Link> from next/link, not a raw <a href="/...">. '
+            + 'A raw anchor triggers a full page reload and bypasses client-side routing. '
+            + 'External links and "#" anchors in <a> are fine.',
+        },
+      ],
+    },
+  },
 ];
