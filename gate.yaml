@@ -1,0 +1,57 @@
+version: 1
+repo: ristoranteDiscovery
+
+defaults:
+  timeout_s: 900
+  shell: /bin/bash
+
+gates:
+  - id: backend-typecheck
+    cmd: cd backend && npx tsc --noEmit
+    kind: typecheck
+    required: true
+    timeout_s: 300
+    description: Backend TypeScript compile check
+
+  - id: backend-build
+    cmd: cd backend && npm run build
+    kind: build
+    required: true
+    timeout_s: 600
+    description: Backend compile to dist
+
+  - id: frontend-build
+    cmd: cd frontend && npm run build
+    kind: build
+    required: true
+    timeout_s: 900
+    description: Next.js production build
+
+  # BLOCKED: `next lint` reads "lint" as a directory under Next 16 — the script
+  # must be fixed first. Tracked as SAI-1693.
+  - id: frontend-lint
+    cmd: cd frontend && npx eslint .
+    kind: lint
+    required: true
+    blocked_by: SAI-1693
+    timeout_s: 300
+    description: Frontend lint (script broken until SAI-1693)
+
+  # BLOCKED: Playwright adopts the Docker container on :3040 and would validate a
+  # stale image. Needs port isolation first. Tracked as SAI-1692.
+  - id: e2e
+    cmd: cd e2e && npx playwright test
+    kind: test
+    required: true
+    blocked_by: SAI-1692
+    timeout_s: 1200
+    description: Playwright E2E (stale-container risk until SAI-1692)
+
+  # Advisory: scanner set incomplete (trivy missing). Tracked as SAI-1699.
+  - id: security
+    cmd: ./scripts/prebuild-scan.sh --repo .
+    kind: check
+    required: false
+    blocked_by: SAI-1699
+    timeout_s: 600
+    description: Pre-build security gate (advisory until SAI-1699)
