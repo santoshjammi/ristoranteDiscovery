@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { BACKEND_URL } from './helpers/env';
 
 // Pre-flight: verify both servers are healthy before running any tests
 test.beforeAll(async ({ request }) => {
   const frontend = await request.get('/');
   expect(frontend.ok(), `Frontend returned ${frontend.status()} — expected 200`).toBeTruthy();
-  const backend = await request.get('http://localhost:8040/health');
+  const backend = await request.get(`${BACKEND_URL}/health`);
   const body = await backend.json();
   expect(body.status, `Backend health: ${body.status}`).toBe('healthy');
 });

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { BACKEND_URL } from './helpers/env';
 
 const TEST_PASSWORD = 'TestPass123!';
 
@@ -25,7 +26,7 @@ async function addRestaurant(page: any, name: string) {
     return raw ? JSON.parse(raw) : null;
   });
   // Create restaurant via Playwright API context (bypasses CORS, no browser fetch)
-  const res = await page.request.post('http://localhost:8040/api/restaurants', {
+  const res = await page.request.post(`${BACKEND_URL}/api/restaurants`, {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     data: { name, address: '123 Main St', city: 'Mumbai', cuisineTypes: ['Indian', 'Chinese'] },
   });
@@ -34,7 +35,7 @@ async function addRestaurant(page: any, name: string) {
   const newR = data.data || data;
   // Link to organization
   if (org && org.id) {
-    const orgRes = await page.request.post(`http://localhost:8040/api/organizations/${org.id}/restaurants`, {
+    const orgRes = await page.request.post(`${BACKEND_URL}/api/organizations/${org.id}/restaurants`, {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       data: { restaurantId: newR.id },
     });
@@ -498,7 +499,7 @@ test.describe('Restaurant List — Comprehensive', () => {
     await signUp(page, email);
     // Create restaurant and get its ID from the API response
     const token = await page.evaluate(() => localStorage.getItem('rdi_token'));
-    const res = await page.request.post('http://localhost:8040/api/restaurants', {
+    const res = await page.request.post(`${BACKEND_URL}/api/restaurants`, {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       data: { name: 'Disable Test', address: '123 Main St', city: 'Mumbai', cuisineTypes: ['Indian', 'Chinese'] },
     });
@@ -511,13 +512,13 @@ test.describe('Restaurant List — Comprehensive', () => {
       return raw ? JSON.parse(raw) : null;
     });
     if (org && org.id) {
-      await page.request.post(`http://localhost:8040/api/organizations/${org.id}/restaurants`, {
+      await page.request.post(`${BACKEND_URL}/api/organizations/${org.id}/restaurants`, {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         data: { restaurantId },
       });
     }
     // Disable via API
-    const disableRes = await page.request.patch(`http://localhost:8040/api/restaurants/${restaurantId}/disable`, {
+    const disableRes = await page.request.patch(`${BACKEND_URL}/api/restaurants/${restaurantId}/disable`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(disableRes.ok()).toBeTruthy();

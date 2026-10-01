@@ -14,7 +14,7 @@ import { test, expect, type Page, type APIRequestContext } from '@playwright/tes
 // restaurant that is guaranteed to produce problem factors.
 
 const TEST_PASSWORD = 'TestPass123!';
-const BACKEND = 'http://localhost:8040';
+import { BACKEND_URL as BACKEND } from './helpers/env';
 const SEED_RESTAURANT_ID = 'demo-biryani-maxx';
 
 /** Sign up a unique user via the API and seed the browser's auth token. */
