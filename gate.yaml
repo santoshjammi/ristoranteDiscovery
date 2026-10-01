@@ -27,15 +27,25 @@ gates:
     timeout_s: 900
     description: Next.js production build
 
-  # BLOCKED: `next lint` reads "lint" as a directory under Next 16 — the script
-  # must be fixed first. Tracked as SAI-1693.
+  # SAI-1693: the previous script was `next lint`, but `next lint` was REMOVED in
+  # Next 16 and no ESLint was installed at all (absent from the lockfile too), so
+  # this gate could never have run. Now a real ESLint 9 flat config, correctness
+  # rules only (the codebase had never been linted).
   - id: frontend-lint
-    cmd: cd frontend && npx eslint .
+    cmd: cd frontend && npx eslint . --quiet
     kind: lint
     required: true
-    blocked_by: SAI-1693
     timeout_s: 300
-    description: Frontend lint (script broken until SAI-1693)
+    description: Frontend ESLint (correctness rules; warnings are advisory)
+
+  # Unused identifiers are reported as warnings, not errors, because the codebase
+  # predates any linter. A cleanup that tightens them is tracked separately.
+  - id: frontend-typecheck
+    cmd: cd frontend && npx tsc --noEmit
+    kind: typecheck
+    required: true
+    timeout_s: 300
+    description: Frontend TypeScript compile check
 
   # BLOCKED: Playwright adopts the Docker container on :3040 and would validate a
   # stale image. Needs port isolation first. Tracked as SAI-1692.

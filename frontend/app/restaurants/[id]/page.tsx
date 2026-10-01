@@ -115,8 +115,8 @@ export default function RestaurantDetailPage() {
       <nav className="global-nav">
         <div className="global-nav-inner">
           <ul className="global-nav-links">
-            <li><a href="/" style={{ fontWeight: 700, color: "var(--green-starbucks)" }}>Ristorante</a></li>
-            <li><a href="/">Dashboard</a></li>
+            <li><Link href="/" style={{ fontWeight: 700, color: "var(--green-starbucks)" }}>Ristorante</Link></li>
+            <li><Link href="/">Dashboard</Link></li>
           </ul>
           <div className="global-nav-actions">
             <Link href="/" className="btn-dark-outlined" style={{ fontSize: "1.3rem" }}>← Back</Link>

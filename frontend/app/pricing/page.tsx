@@ -2,6 +2,7 @@
 
 import { PublicLayout } from "@/components/shared/PublicLayout";
 import { colors, spacing, radius, typography } from "@/lib/design-tokens";
+import Link from 'next/link';
 
 const plans = [
   {
@@ -64,9 +65,9 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/auth" style={{ display: "block", textAlign: "center", padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.md, background: plan.popular ? colors.primary : "transparent", border: `1px solid ${plan.popular ? colors.primary : colors.border}`, color: plan.popular ? "#fff" : colors.text, textDecoration: "none", fontWeight: 600, fontSize: "0.875rem" }}>
+              <Link href="/auth" style={{ display: "block", textAlign: "center", padding: `${spacing.sm} ${spacing.lg}`, borderRadius: radius.md, background: plan.popular ? colors.primary : "transparent", border: `1px solid ${plan.popular ? colors.primary : colors.border}`, color: plan.popular ? "#fff" : colors.text, textDecoration: "none", fontWeight: 600, fontSize: "0.875rem" }}>
                 {plan.cta}
-              </a>
+              </Link>
             </div>
           ))}
         </div>
