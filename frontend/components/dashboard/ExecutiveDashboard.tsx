@@ -44,9 +44,9 @@ export default function ExecutiveDashboard() {
       <nav className="global-nav">
         <div className="global-nav-inner">
           <ul className="global-nav-links">
-            <li><a href="/" style={{ fontWeight: 700, color: "var(--green-starbucks)" }}>Ristorante</a></li>
-            <li><a href="/">Dashboard</a></li>
-            <li><a href="/">Restaurants</a></li>
+            <li><Link href="/" style={{ fontWeight: 700, color: "var(--green-starbucks)" }}>Ristorante</Link></li>
+            <li><Link href="/">Dashboard</Link></li>
+            <li><Link href="/">Restaurants</Link></li>
           </ul>
           <div className="global-nav-actions">
             <Link href="/restaurants/new" className="btn-primary">+ Add Restaurant</Link>
