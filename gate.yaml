@@ -47,6 +47,24 @@ gates:
     timeout_s: 1200
     description: Playwright E2E (stale-container risk until SAI-1692)
 
+  # ADDED after an independent verifier FALSIFIED this branch's first commit.
+  # A spec imported `TEST_PASSWORD` while its helper still used the deleted `PWD`,
+  # so all 22 tests in that file would have thrown ReferenceError. The verification
+  # I originally ran — `playwright test --list` — reported 205 tests and exit 0 in
+  # the SAME tree, because Playwright transpiles without type-checking. That was a
+  # false green and this gate is the fix: an undefined identifier is invisible to
+  # --list and only a type-check catches it.
+  #
+  # This was never possible before: e2e/tsconfig.json declares `types: ["node"]`
+  # while `@types/node` was not installed, so tsc failed with TS2688 before it could
+  # reach any spec. Both are fixed here.
+  - id: e2e-typecheck
+    cmd: cd e2e && npx tsc --noEmit
+    kind: typecheck
+    required: true
+    timeout_s: 300
+    description: E2E spec type check (catches undefined identifiers that --list cannot)
+
   # Advisory: scanner set incomplete (trivy missing). Tracked as SAI-1699.
   - id: security
     cmd: ./scripts/prebuild-scan.sh --repo .

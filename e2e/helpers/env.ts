@@ -20,3 +20,13 @@ export const FRONTEND_URL = `http://127.0.0.1:${FRONTEND_PORT}`;
 
 /** `${BACKEND_URL}/api` convenience for request fixtures. */
 export const BACKEND_API = `${BACKEND_URL}/api`;
+
+// ── Test credentials ─────────────────────────────────────────────────────────
+// Single source of truth. Previously the literal `TestPass123!` was repeated in
+// 20 places across 6 specs, which made a credential-ish value grep-visible and
+// trained reviewers to ignore credential findings.
+//
+// This is a LOCAL E2E fixture only — it authenticates against the throwaway E2E
+// instance on an isolated port pair with a copied database, never production.
+// Overridable so CI can inject a different value without touching code.
+export const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'TestPass123!';

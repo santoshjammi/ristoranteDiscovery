@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_PASSWORD } from './helpers/env';
 
 test.describe('Intelligence Pages', () => {
   test('Intelligence Overview loads and shows categories', async ({ page }) => {
@@ -8,7 +9,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
@@ -31,7 +32,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
@@ -78,7 +79,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
@@ -108,7 +109,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
@@ -125,7 +126,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
@@ -141,7 +142,7 @@ test.describe('Intelligence Pages', () => {
     await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible({ timeout: 5000 });
     await page.getByPlaceholder('Your Name').fill('Test User');
     await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill('TestPass123!');
+    await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
     await page.getByPlaceholder('Organization Name').fill('RDI Org - intelligence');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });

@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const TEST_PASSWORD = 'TestPass123!';
+import { TEST_PASSWORD } from './helpers/env';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

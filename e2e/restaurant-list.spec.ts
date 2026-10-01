@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { BACKEND_URL } from './helpers/env';
-
-const TEST_PASSWORD = 'TestPass123!';
+import { BACKEND_URL, TEST_PASSWORD } from './helpers/env';
 
 async function signUp(page: any, email: string) {
   await page.goto('/auth');
